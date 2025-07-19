@@ -2,9 +2,9 @@
 galaxy_info:
   author: Suguru Hirahara
   company: progressiv
-  role_name: docmost
+  role_name: duplicati
   namespace: progressiv
-  description: Docmost
+  description: Duplicati
   platforms:
     - name: Debian
       versions:

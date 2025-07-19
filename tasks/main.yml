@@ -4,24 +4,24 @@
 # SPDX-License-Identifier: AGPL-3.0-or-later
 
 ---
-- name: Perform Docmost installation tasks
-  when: docmost_enabled | bool
+- name: Perform Duplicati installation tasks
+  when: duplicati_enabled | bool
   tags:
     - setup-all
-    - setup-docmost
+    - setup-duplicati
     - install-all
-    - install-docmost
+    - install-duplicati
   block:
-    - name: Validate Docmost configuration
+    - name: Validate Duplicati configuration
       ansible.builtin.include_tasks: "{{ role_path }}/tasks/validate_config.yml"
-    - name: Install Docmost
+    - name: Install Duplicati
       ansible.builtin.include_tasks: "{{ role_path }}/tasks/install.yml"
 
-- name: Perform Docmost uninstallation tasks
-  when: not docmost_enabled | bool
+- name: Perform Duplicati uninstallation tasks
+  when: not duplicati_enabled | bool
   tags:
     - setup-all
-    - setup-docmost
+    - setup-duplicati
   block:
-    - name: Uninstall Docmost
+    - name: Uninstall Duplicati
       ansible.builtin.include_tasks: "{{ role_path }}/tasks/uninstall.yml"

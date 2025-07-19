@@ -1,0 +1,63 @@
+{#
+SPDX-FileCopyrightText: 2023 Slavi Pantaleev
+SPDX-FileCopyrightText: 2024 Nikita Chernyi
+SPDX-FileCopyrightText: 2025 Suguru Hirahara
+
+SPDX-License-Identifier: AGPL-3.0-or-later
+#}
+
+[Unit]
+Description=Duplicati ({{ duplicati_identifier }})
+{% for service in duplicati_systemd_required_services_list %}
+Requires={{ service }}
+After={{ service }}
+{% endfor %}
+{% for service in duplicati_systemd_wanted_services_list %}
+Wants={{ service }}
+{% endfor %}
+DefaultDependencies=no
+
+[Service]
+Type=simple
+Environment="HOME={{ devture_systemd_docker_base_systemd_unit_home_path }}"
+ExecStartPre=-{{ devture_systemd_docker_base_host_command_sh }} -c '{{ devture_systemd_docker_base_host_command_docker }} stop -t {{ devture_systemd_docker_base_container_stop_grace_time_seconds }} {{ duplicati_identifier }} 2>/dev/null || true'
+ExecStartPre=-{{ devture_systemd_docker_base_host_command_sh }} -c '{{ devture_systemd_docker_base_host_command_docker }} rm {{ duplicati_identifier }} 2>/dev/null || true'
+
+ExecStartPre={{ devture_systemd_docker_base_host_command_docker }} create \
+      --rm \
+      --name={{ duplicati_identifier }} \
+      --log-driver=none \
+      --user={{ duplicati_uid }}:{{ duplicati_gid }} \
+      --cap-drop=ALL \
+      --network={{ duplicati_container_network }} \
+      {% if duplicati_container_http_host_bind_port %}
+      -p {{ duplicati_container_http_host_bind_port }}:{{ duplicati_container_http_port }} \
+      {% endif %}
+      --env-file={{ duplicati_base_path }}/env \
+      --label-file={{ duplicati_base_path }}/labels \
+      {% if duplicati_container_additional_volumes | length == 0 %}
+      --mount type=bind,src={{ duplicati_data_path }},dst=/app/data/storage \
+      {% endif %}
+      {% for volume in duplicati_container_additional_volumes %}
+      --mount type={{ volume.type | default('bind' if '/' in volume.src else 'volume') }},src={{ volume.src }},dst={{ volume.dst }}{{ (',' + volume.options) if volume.options else '' }} \
+      {% endfor %}
+      {% for arg in duplicati_container_extra_arguments %}
+      {{ arg }} \
+      {% endfor %}
+      {{ duplicati_container_image_self_build_name if duplicati_container_image_self_build else duplicati_container_image }}
+
+{% for network in duplicati_container_additional_networks %}
+ExecStartPre={{ devture_systemd_docker_base_host_command_docker }} network connect {{ network }} {{ duplicati_identifier }}
+{% endfor %}
+
+ExecStart={{ devture_systemd_docker_base_host_command_docker }} start --attach {{ duplicati_identifier }}
+
+ExecStop=-{{ devture_systemd_docker_base_host_command_sh }} -c '{{ devture_systemd_docker_base_host_command_docker }} stop -t {{ devture_systemd_docker_base_container_stop_grace_time_seconds }} {{ duplicati_identifier }} 2>/dev/null || true'
+ExecStop=-{{ devture_systemd_docker_base_host_command_sh }} -c '{{ devture_systemd_docker_base_host_command_docker }} rm {{ duplicati_identifier }} 2>/dev/null || true'
+
+Restart=always
+RestartSec=30
+SyslogIdentifier={{ duplicati_identifier }}
+
+[Install]
+WantedBy=multi-user.target

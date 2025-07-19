@@ -4,99 +4,99 @@
 # SPDX-License-Identifier: AGPL-3.0-or-later
 
 ---
-- name: Ensure Docmost paths exist
+- name: Ensure Duplicati paths exist
   ansible.builtin.file:
     path: "{{ item }}"
     state: directory
     mode: "0750"
-    owner: "{{ docmost_uid }}"
-    group: "{{ docmost_gid }}"
+    owner: "{{ duplicati_uid }}"
+    group: "{{ duplicati_gid }}"
   with_items:
-    - "{{ docmost_base_path }}"
-    - "{{ docmost_data_path }}"
+    - "{{ duplicati_base_path }}"
+    - "{{ duplicati_data_path }}"
 
-- name: Ensure Docmost support files installed
+- name: Ensure Duplicati support files installed
   ansible.builtin.template:
     src: "{{ role_path }}/templates/{{ item }}.j2"
-    dest: "{{ docmost_base_path }}/{{ item }}"
+    dest: "{{ duplicati_base_path }}/{{ item }}"
     mode: "0640"
-    owner: "{{ docmost_uid }}"
-    group: "{{ docmost_gid }}"
+    owner: "{{ duplicati_uid }}"
+    group: "{{ duplicati_gid }}"
   with_items:
     - env
     - labels
 
-- name: Run if self-building of Docmost container image is not enabled
-  when: "not docmost_container_image_self_build | bool"
+- name: Run if self-building of Duplicati container image is not enabled
+  when: "not duplicati_container_image_self_build | bool"
   block:
-    - name: Ensure Docmost container image is pulled via community.docker.docker_image
+    - name: Ensure Duplicati container image is pulled via community.docker.docker_image
       when: devture_systemd_docker_base_container_image_pull_method == 'ansible-module'
       community.docker.docker_image:
-        name: "{{ docmost_container_image }}"
+        name: "{{ duplicati_container_image }}"
         source: "{{ 'pull' if ansible_version.major > 2 or ansible_version.minor > 7 else omit }}"
-        force_source: "{{ docmost_container_image_force_pull if ansible_version.major > 2 or ansible_version.minor >= 8 else omit }}"
-        force: "{{ omit if ansible_version.major > 2 or ansible_version.minor >= 8 else docmost_container_image_force_pull }}"
+        force_source: "{{ duplicati_container_image_force_pull if ansible_version.major > 2 or ansible_version.minor >= 8 else omit }}"
+        force: "{{ omit if ansible_version.major > 2 or ansible_version.minor >= 8 else duplicati_container_image_force_pull }}"
       register: result
       retries: "{{ devture_playbook_help_container_retries_count }}"
       delay: "{{ devture_playbook_help_container_retries_delay }}"
       until: result is not failed
 
-    - name: Ensure Docmost container image is pulled via ansible.builtin.command
+    - name: Ensure Duplicati container image is pulled via ansible.builtin.command
       when: devture_systemd_docker_base_container_image_pull_method == 'command'
       ansible.builtin.command:
-        cmd: "{{ devture_systemd_docker_base_host_command_docker }} pull {{ docmost_container_image }}"
+        cmd: "{{ devture_systemd_docker_base_host_command_docker }} pull {{ duplicati_container_image }}"
       register: result
       retries: "{{ devture_playbook_help_container_retries_count }}"
       delay: "{{ devture_playbook_help_container_retries_delay }}"
       until: result is not failed
       changed_when: "'Downloaded newer image' in result.stdout"
 
-- name: Run if self-building of Docmost container image is enabled
-  when: "docmost_container_image_self_build | bool"
+- name: Run if self-building of Duplicati container image is enabled
+  when: "duplicati_container_image_self_build | bool"
   block:
-    - name: Ensure Docmost repository is present on self-build
+    - name: Ensure Duplicati repository is present on self-build
       ansible.builtin.git:
-        repo: "{{ docmost_container_image_self_build_repo }}"
-        version: "{{ docmost_container_image_self_build_repo_version }}"
-        dest: "{{ docmost_container_image_self_build_src_files_path }}"
+        repo: "{{ duplicati_container_image_self_build_repo }}"
+        version: "{{ duplicati_container_image_self_build_repo_version }}"
+        dest: "{{ duplicati_container_image_self_build_src_files_path }}"
         force: "yes"
         recursive: false # do not init/update any submodules including `apps/server/src/ee`
-      register: docmost_git_pull_results
+      register: duplicati_git_pull_results
 
-    - name: Ensure Docmost container image is built
+    - name: Ensure Duplicati container image is built
       community.docker.docker_image:
-        name: "{{ docmost_container_image_self_build_name }}"
+        name: "{{ duplicati_container_image_self_build_name }}"
         source: build
-        force_source: "{{ docmost_git_pull_results.changed if ansible_version.major > 2 or ansible_version.minor >= 8 else omit }}"
-        force: "{{ omit if ansible_version.major > 2 or ansible_version.minor >= 8 else docmost_git_pull_results.changed }}"
+        force_source: "{{ duplicati_git_pull_results.changed if ansible_version.major > 2 or ansible_version.minor >= 8 else omit }}"
+        force: "{{ omit if ansible_version.major > 2 or ansible_version.minor >= 8 else duplicati_git_pull_results.changed }}"
         build:
           dockerfile: Dockerfile
-          path: "{{ docmost_container_image_self_build_src_files_path }}"
+          path: "{{ duplicati_container_image_self_build_src_files_path }}"
           pull: true
           args:
 
-- name: Ensure Docmost container network is created via community.docker.docker_network
+- name: Ensure Duplicati container network is created via community.docker.docker_network
   when: devture_systemd_docker_base_container_network_creation_method == 'ansible-module'
   community.docker.docker_network:
     enable_ipv6: "{{ devture_systemd_docker_base_ipv6_enabled }}"
-    name: "{{ docmost_container_network }}"
+    name: "{{ duplicati_container_network }}"
     driver: bridge
     driver_options: "{{ devture_systemd_docker_base_container_networks_driver_options }}"
 
-- name: Ensure Docmost container network is created via ansible.builtin.command
+- name: Ensure Duplicati container network is created via ansible.builtin.command
   when: devture_systemd_docker_base_container_network_creation_method == 'command'
   ansible.builtin.command:
     cmd: >-
       {{ devture_systemd_docker_base_host_command_docker }} network create
       {% if devture_systemd_docker_base_ipv6_enabled %}--ipv6{% endif %}
       {{ devture_systemd_docker_base_container_networks_driver_options_string }}
-      {{ docmost_container_network }}
+      {{ duplicati_container_network }}
   register: network_creation_result
   changed_when: network_creation_result.rc == 0
   failed_when: network_creation_result.rc != 0 and 'already exists' not in network_creation_result.stderr
 
-- name: Ensure Docmost systemd service is present
+- name: Ensure Duplicati systemd service is present
   ansible.builtin.template:
-    src: "{{ role_path }}/templates/systemd/docmost.service.j2"
-    dest: "{{ devture_systemd_docker_base_systemd_path }}/{{ docmost_identifier }}.service"
+    src: "{{ role_path }}/templates/systemd/duplicati.service.j2"
+    dest: "{{ devture_systemd_docker_base_systemd_path }}/{{ duplicati_identifier }}.service"
     mode: "0644"

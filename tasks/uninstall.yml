@@ -4,63 +4,63 @@
 # SPDX-License-Identifier: AGPL-3.0-or-later
 
 ---
-- name: Check existence of Docmost systemd service
+- name: Check existence of Duplicati systemd service
   ansible.builtin.stat:
-    path: "{{ devture_systemd_docker_base_systemd_path }}/{{ docmost_identifier }}.service"
-  register: docmost_service_stat
+    path: "{{ devture_systemd_docker_base_systemd_path }}/{{ duplicati_identifier }}.service"
+  register: duplicati_service_stat
 
-- name: Uninstall Docmost systemd services and files
-  when: docmost_service_stat.stat.exists | bool
+- name: Uninstall Duplicati systemd services and files
+  when: duplicati_service_stat.stat.exists | bool
   block:
-    - name: Ensure Docmost systemd service is stopped
+    - name: Ensure Duplicati systemd service is stopped
       ansible.builtin.service:
-        name: "{{ docmost_identifier }}"
+        name: "{{ duplicati_identifier }}"
         state: stopped
         enabled: false
         daemon_reload: true
 
-    - name: Ensure Docmost systemd service does not exist
+    - name: Ensure Duplicati systemd service does not exist
       ansible.builtin.file:
-        path: "{{ devture_systemd_docker_base_systemd_path }}/{{ docmost_identifier }}.service"
+        path: "{{ devture_systemd_docker_base_systemd_path }}/{{ duplicati_identifier }}.service"
         state: absent
 
-    - name: Ensure Docmost support files do not exist
+    - name: Ensure Duplicati support files do not exist
       ansible.builtin.file:
-        path: "{{ docmost_base_path }}/{{ item }}"
+        path: "{{ duplicati_base_path }}/{{ item }}"
         state: absent
       with_items:
         - env
         - labels
 
-    - name: Ensure Docmost container network does not exist via community.docker.docker_network
+    - name: Ensure Duplicati container network does not exist via community.docker.docker_network
       when: devture_systemd_docker_base_container_network_creation_method == 'ansible-module'
       community.docker.docker_network:
-        name: "{{ docmost_container_network }}"
+        name: "{{ duplicati_container_network }}"
         state: absent
 
-    - name: Ensure Docmost container network does not exist via ansible.builtin.command
+    - name: Ensure Duplicati container network does not exist via ansible.builtin.command
       when: devture_systemd_docker_base_container_network_creation_method == 'command'
       ansible.builtin.command:
         cmd: >-
           {{ devture_systemd_docker_base_host_command_docker }} network rm
-          {{ docmost_container_network }}
+          {{ duplicati_container_network }}
       register: network_deletion_result
-      changed_when: docmost_container_network in network_deletion_result.stdout
+      changed_when: duplicati_container_network in network_deletion_result.stdout
 
-- name: Check existence of Docmost local data path
+- name: Check existence of Duplicati local data path
   ansible.builtin.stat:
-    path: "{{ docmost_data_path }}"
-  register: docmost_data_path_stat
+    path: "{{ duplicati_data_path }}"
+  register: duplicati_data_path_stat
 
 # We just want to notify the user. Deleting data is too destructive.
-- name: Notify if Docmost local data remains
-  when: docmost_data_path_stat.stat.exists | bool
+- name: Notify if Duplicati local data remains
+  when: duplicati_data_path_stat.stat.exists | bool
   ansible.builtin.set_fact:
     devture_playbook_runtime_messages_list: |
       {{
         devture_playbook_runtime_messages_list | default([])
         +
         [
-          "Note: As the local Docmost instance has been removed, some old data remains in `{{ docmost_data_path }}`. Feel free to delete it."
+          "Note: As the local Duplicati instance has been removed, some old data remains in `{{ duplicati_data_path }}`. Feel free to delete it."
         ]
       }}
