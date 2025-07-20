@@ -127,6 +127,8 @@ If "Local folder or drive" is selected as the storage type on the configuration 
 >[!NOTE]
 > Inside the container is there a directory named "backups" as well (mind the last "s") — Make sure not to confuse them.
 
+[<img src="assets/destination.png" title="Destination setting" width="600" alt="Destination setting">](assets/destination.png)
+
 #### Source Data setting
 
 On the next step for Source Data setting, **choose `source` or directories inside it** as the backup source.
@@ -135,6 +137,8 @@ On the next step for Source Data setting, **choose `source` or directories insid
 > Choosing directories outside of it would just create an useless backup of data inside the Duplicati's Docker container, not of data on the mounted directory which belongs to the host machine.
 
 If you include Duplicati's directory itself in the backup, make sure to exclude `backup` as it is used for storing backups if "Local folder or drive" is selected as the destination; including it would have those backups backed up again.
+
+[<img src="assets/source.png" title="Source Data setting" width="600" alt="Source Data setting">](assets/source.png)
 
 ## Troubleshooting
 
