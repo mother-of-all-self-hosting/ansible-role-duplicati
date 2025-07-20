@@ -47,20 +47,38 @@
       register: network_deletion_result
       changed_when: duplicati_container_network in network_deletion_result.stdout
 
-- name: Check existence of Duplicati local data path
+- name: Check existence of Duplicati local config path
   ansible.builtin.stat:
-    path: "{{ duplicati_data_path }}"
-  register: duplicati_data_path_stat
+    path: "{{ duplicati_config_path }}"
+  register: duplicati_config_path_stat
 
 # We just want to notify the user. Deleting data is too destructive.
-- name: Notify if Duplicati local data remains
-  when: duplicati_data_path_stat.stat.exists | bool
+- name: Notify if Duplicati local config path remains
+  when: duplicati_config_path_stat.stat.exists | bool
   ansible.builtin.set_fact:
     devture_playbook_runtime_messages_list: |
       {{
         devture_playbook_runtime_messages_list | default([])
         +
         [
-          "Note: As the local Duplicati instance has been removed, some old data remains in `{{ duplicati_data_path }}`. Feel free to delete it."
+          "Note: As the local Duplicati instance has been removed, local config data remains in `{{ duplicati_config_path }}`. Feel free to delete it."
+        ]
+      }}
+
+- name: Check existence of Duplicati local backup path
+  ansible.builtin.stat:
+    path: "{{ duplicati_backup_path }}"
+  register: duplicati_backup_path_stat
+
+# We just want to notify the user. Deleting data is too destructive.
+- name: Notify if Duplicati local backup path remains
+  when: duplicati_backup_path_stat.stat.exists | bool
+  ansible.builtin.set_fact:
+    devture_playbook_runtime_messages_list: |
+      {{
+        devture_playbook_runtime_messages_list | default([])
+        +
+        [
+          "Note: As the local Duplicati instance has been removed, locally backed up data remains in `{{ duplicati_backup_path }}`. Feel free to delete it."
         ]
       }}

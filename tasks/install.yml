@@ -13,7 +13,8 @@
     group: "{{ duplicati_gid }}"
   with_items:
     - "{{ duplicati_base_path }}"
-    - "{{ duplicati_data_path }}"
+    - "{{ duplicati_config_path }}"
+    - "{{ duplicati_backup_path }}"
 
 - name: Ensure Duplicati support files installed
   ansible.builtin.template:
@@ -60,7 +61,6 @@
         version: "{{ duplicati_container_image_self_build_repo_version }}"
         dest: "{{ duplicati_container_image_self_build_src_files_path }}"
         force: "yes"
-        recursive: false # do not init/update any submodules including `apps/server/src/ee`
       register: duplicati_git_pull_results
 
     - name: Ensure Duplicati container image is built

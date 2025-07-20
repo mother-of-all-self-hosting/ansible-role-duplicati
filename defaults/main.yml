@@ -13,10 +13,16 @@ duplicati_enabled: true
 
 duplicati_identifier: duplicati
 duplicati_base_path: "/{{ duplicati_identifier }}"
-duplicati_data_path: "{{ duplicati_base_path }}/data"
+duplicati_config_path: "{{ duplicati_base_path }}/config"
+duplicati_backup_path: "{{ duplicati_base_path }}/backup"
+duplicati_source_path: "" # should be specified by users
 
-# renovate: datasource=docker depName=duplicati/duplicati versioning=semver
-duplicati_version: 0.21.0
+# As the official image is available at https://hub.docker.com/r/duplicati/duplicati,
+# this role adopts the one provided by LinuxServer.io team.
+# Also see: https://docs.duplicati.com/detailed-descriptions/using-duplicati-from-docker
+#
+# renovate: datasource=docker depName=linuxserver/duplicati versioning=semver
+duplicati_version: 2.1.0
 
 duplicati_uid: ""
 duplicati_gid: ""
@@ -24,7 +30,6 @@ duplicati_gid: ""
 # The hostname at which Duplicati is served.
 duplicati_hostname: ""
 
-# Specify URI scheme for duplicati_environment_variable_app_url.
 duplicati_scheme: https
 
 # The path at which Duplicati is exposed.
@@ -34,7 +39,7 @@ duplicati_scheme: https
 # technical limitations.
 duplicati_path_prefix: /
 
-duplicati_container_image: "{{ duplicati_container_image_registry_prefix }}duplicati/duplicati:{{ duplicati_container_image_tag }}"
+duplicati_container_image: "{{ duplicati_container_image_registry_prefix }}linuxserver/duplicati:{{ duplicati_container_image_tag }}"
 duplicati_container_image_tag: "{{ duplicati_version }}"
 duplicati_container_image_registry_prefix: "{{ duplicati_container_image_registry_prefix_upstream }}"
 duplicati_container_image_registry_prefix_upstream: "{{ duplicati_container_image_registry_prefix_upstream_default }}"
@@ -42,9 +47,9 @@ duplicati_container_image_registry_prefix_upstream_default: docker.io/
 duplicati_container_image_force_pull: "{{ duplicati_container_image.endswith(':latest') }}"
 
 duplicati_container_image_self_build: false
-duplicati_container_image_self_build_name: "duplicati/duplicati:{{ duplicati_container_image_self_build_repo_version }}"
-duplicati_container_image_self_build_repo: "https://github.com/duplicati/duplicati.git"
-duplicati_container_image_self_build_repo_version: "{{ 'v' + duplicati_version if duplicati_version != 'latest' else 'main' }}"
+duplicati_container_image_self_build_name: "linuxserver/duplicati:{{ duplicati_container_image_self_build_repo_version }}"
+duplicati_container_image_self_build_repo: "https://github.com/linuxserver/docker-duplicati.git"
+duplicati_container_image_self_build_repo_version: "master"
 duplicati_container_image_self_build_src_files_path: "{{ duplicati_base_path }}/docker-src"
 
 # Controls whether the container exposes its HTTP port (tcp/80 in the container).
@@ -56,7 +61,7 @@ duplicati_container_http_host_bind_port: ""
 duplicati_container_network: "{{ duplicati_identifier }}"
 
 # The port number in the container
-duplicati_container_http_port: 3000
+duplicati_container_http_port: 8200
 
 # A list of additional container networks that the container would be connected to.
 # The role does not create these networks, so make sure they already exist.
@@ -169,88 +174,16 @@ duplicati_systemd_required_services_list_custom: []
 # List of systemd services that the Duplicati systemd service wants
 duplicati_systemd_wanted_services_list: []
 
-# env.j2: Specify application's URL
-duplicati_environment_variable_app_url: "{{ duplicati_scheme }}://{{ duplicati_hostname }}"
+# Specify a timezone to use in TZ format
+duplicati_environment_variable_settings_tz: "Etc/UTC"
 
-# env.j2: Specify application's secret (minimum of 32 characters)
-# Generate a strong secret. You can create one with a command like `pwgen -s 64 1`.
-duplicati_environment_variable_app_secret: YOUR_SECRET_KEY_HERE
+# Specify an encryption key for settings database
+# Valid value: minimum 8 characters, alphanumeric
+duplicati_environment_variable_settings_encryption_key: ""
 
-# env.j2: Specify expiration time for JSON Web Tokens (default: 30 days)
-duplicati_environment_variable_jwt_token_expires_in: 30d
-
-# env.j2: Specify configuration for Postgres database server
-duplicati_database_username: "postgres"
-duplicati_database_password: "password"
-duplicati_database_hostname: "localhost"
-duplicati_database_port: 5432
-duplicati_database_name: "duplicati"
-duplicati_environment_variable_database_url: "postgres://{{ duplicati_database_username }}:{{ duplicati_database_password }}@{{ duplicati_database_hostname }}:{{ duplicati_database_port }}/{{ duplicati_database_name }}?schema=public"
-
-# env.j2: Specify configuration for Redis, KeyDB, or Valkey server
-duplicati_redis_username: ""
-duplicati_redis_password: ""
-duplicati_redis_host: ""
-duplicati_redis_port: 6379
-duplicati_redis_dbnumber: ""
-duplicati_environment_variable_redis_url: "redis://{{ duplicati_redis_username }}:{{ duplicati_redis_password }}@{{ duplicati_redis_host }}:{{ duplicati_redis_port }}/{{ duplicati_redis_dbnumber }}"
-
-# env.j2: Specify the storage backend option
-# Valid values: local, s3
-duplicati_environment_variable_storage_driver: local
-
-# env.j2: Specify S3 driver configuration
-# Set a S3 access key ID
-duplicati_environment_variable_aws_s3_access_key_id: ""
-# Set a S3 secret access key ID
-duplicati_environment_variable_aws_s3_secret_access_key: ""
-# Set the region where your S3 bucket is located
-duplicati_environment_variable_aws_s3_region: ""
-# Set a S3 bucket name to use
-duplicati_environment_variable_aws_s3_bucket: ""
-# The endpoint URL for your S3 service (optional; set if using a S3 compatible storage like Wasabi and Storj)
-duplicati_environment_variable_aws_s3_endpoint: ""
-# Control whether to force path style URLs (https://docs.aws.amazon.com/AWSJavaScriptSDK/latest/AWS/Config.html#s3ForcePathStyle-property) for S3 objects
-duplicati_environment_variable_aws_s3_force_path_style: false
-
-# env.j2: Specify the maximum uploaded file size (default: 50mb)
-duplicati_environment_variable_file_upload_size_limit: "50mb"
-
-# env.j2: Control whether mailer is enabled
-duplicati_mailer_enabled: false
-
-# env.j2: Specify the mailer's configuration
-# Valid values: smtp, postmark
-duplicati_environment_variable_mail_driver: smtp
-# Set the email address that emails will be sent from
-duplicati_environment_variable_mail_from_address: hello@example.com
-# Set the name that emails will be sent from
-duplicati_environment_variable_mail_from_name: duplicati
-
-# env.j2: Specify SMTP driver configuration
-# Set the hostname of the SMTP server
-duplicati_environment_variable_smtp_host: 127.0.0.1
-# Set the port to use for the SMTP server
-duplicati_environment_variable_smtp_port: 587
-# Set the username for the SMTP server
-duplicati_environment_variable_smtp_username: ""
-# Set the password for the SMTP server
-duplicati_environment_variable_smtp_password: ""
-# Control whether TLS is used when connecting to the server
-duplicati_environment_variable_smtp_secure: false
-# Control whether SSL errors are ignored
-duplicati_environment_variable_smtp_ignoretls: false
-
-# env.j2: Specify Postmark driver configuration
-duplicati_environment_variable_postmark_token: ""
-
-# env.j2: Specify custom Draw.io server configuration
-# Example: https://embed.diagrams.net
-duplicati_environment_variable_drawio_url: ""
-
-# env.j2: Control whether telemetry is disabled
-duplicati_environment_variable_disable_telemetry: false
+# Specify a password for the web UI
+# If left unset, it will default to `changeme`, which can be changed with the webui settings.
+duplicati_environment_variable_duplicati__webservice_password: ""
 
 # Additional environment variables.
-# See: https://duplicati.com/docs/self-hosting/environment-variables
 duplicati_environment_variables_additional_variables: ""
