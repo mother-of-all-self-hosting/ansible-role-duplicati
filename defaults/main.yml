@@ -92,6 +92,12 @@ duplicati_container_labels_traefik_entrypoints: web-secure
 duplicati_container_labels_traefik_tls: "{{ duplicati_container_labels_traefik_entrypoints != 'web' }}"
 duplicati_container_labels_traefik_tls_certResolver: default  # noqa var-naming
 
+# Controls which additional headers to attach to all HTTP requests.
+# To add your own custom request headers, use `duplicati_container_labels_traefik_additional_request_headers_custom`
+duplicati_container_labels_traefik_additional_request_headers: "{{ duplicati_container_labels_traefik_additional_request_headers_auto | combine(duplicati_container_labels_traefik_additional_request_headers_custom) }}"
+duplicati_container_labels_traefik_additional_request_headers_auto: {}
+duplicati_container_labels_traefik_additional_request_headers_custom: {}
+
 # Controls which additional headers to attach to all HTTP responses.
 # To add your own custom response headers, use `duplicati_container_labels_traefik_additional_response_headers_custom`
 duplicati_container_labels_traefik_additional_response_headers: "{{ duplicati_container_labels_traefik_additional_response_headers_auto | combine(duplicati_container_labels_traefik_additional_response_headers_custom) }}"
