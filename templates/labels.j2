@@ -15,7 +15,7 @@ traefik.docker.network={{ duplicati_container_labels_traefik_docker_network }}
 {% set middlewares = [] %}
 
 {% if duplicati_container_labels_traefik_path_prefix != '/' %}
-traefik.http.middlewares.{{ duplicati_identifier }}-slashless-redirect.redirectregex.regex=({{ duplicati_container_labels_traefik_path_prefix | quote }})$
+traefik.http.middlewares.{{ duplicati_identifier }}-slashless-redirect.redirectregex.regex=^({{ duplicati_container_labels_traefik_path_prefix | quote }})$
 traefik.http.middlewares.{{ duplicati_identifier }}-slashless-redirect.redirectregex.replacement=${1}/
 {% set middlewares = middlewares + [duplicati_identifier + '-slashless-redirect'] %}
 {% endif %}
