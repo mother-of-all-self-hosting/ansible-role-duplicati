@@ -66,7 +66,7 @@
         devture_playbook_runtime_messages_list | default([])
         +
         [
-          "Note: As the local Duplicati instance has been removed, local config data remains in `{{ duplicati_config_path }}`. Feel free to delete it."
+          "Note: As the local Duplicati instance has been removed, local config data remains in `" + duplicati_config_path + "`. Feel free to delete it."
         ]
       }}
 
@@ -84,6 +84,6 @@
         devture_playbook_runtime_messages_list | default([])
         +
         [
-          "Note: As the local Duplicati instance has been removed, locally backed up data remains in `{{ duplicati_backup_path }}`. Feel free to delete it."
+          "Note: As the local Duplicati instance has been removed, locally backed up data remains in `" + duplicati_backup_path + "`. Feel free to delete it."
         ]
       }}
