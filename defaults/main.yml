@@ -180,7 +180,10 @@ duplicati_systemd_required_services_list_auto: []
 duplicati_systemd_required_services_list_custom: []
 
 # List of systemd services that the Duplicati systemd service wants
-duplicati_systemd_wanted_services_list: []
+duplicati_systemd_wanted_services_list: "{{ duplicati_systemd_wanted_services_list_default + duplicati_systemd_wanted_services_list_auto + duplicati_systemd_wanted_services_list_custom }}"
+duplicati_systemd_wanted_services_list_default: []
+duplicati_systemd_wanted_services_list_auto: []
+duplicati_systemd_wanted_services_list_custom: []
 
 # Specify a timezone to use in TZ format
 duplicati_environment_variable_settings_tz: "Etc/UTC"
