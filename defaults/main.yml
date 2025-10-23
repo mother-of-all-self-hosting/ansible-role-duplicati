@@ -22,7 +22,7 @@ duplicati_source_path: "" # should be specified by users
 # Also see: https://docs.duplicati.com/detailed-descriptions/using-duplicati-from-docker
 #
 # renovate: datasource=docker depName=linuxserver/duplicati versioning=semver
-duplicati_version: 2.1.0
+duplicati_version: 2.2.0
 
 duplicati_uid: ""
 duplicati_gid: ""
