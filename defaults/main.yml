@@ -32,7 +32,7 @@ duplicati_hostname: ""
 
 duplicati_scheme: https
 
-# The path at which Duplicati is exposed.
+# The path at which Duplicati is served.
 # This value must either be `/` or not end with a slash (e.g. `/duplicati`).
 #
 # Hosting Duplicati under a subpath does not seem to be possible due to Duplicati's
