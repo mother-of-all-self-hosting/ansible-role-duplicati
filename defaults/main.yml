@@ -126,7 +126,7 @@ duplicati_container_labels_additional_labels: "{{ duplicati_container_labels_add
 duplicati_container_labels_additional_labels_auto: {}
 duplicati_container_labels_additional_labels_custom: {}
 
-# A list of extra arguments to pass to the container (`docker run` command)
+# A list of extra arguments to pass to the container (`docker create` command)
 duplicati_container_extra_arguments: "{{ duplicati_container_extra_arguments_auto + duplicati_container_extra_arguments_custom }}"
 duplicati_container_extra_arguments_auto: []
 duplicati_container_extra_arguments_custom: []
