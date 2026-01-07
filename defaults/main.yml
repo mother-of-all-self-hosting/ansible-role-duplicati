@@ -120,11 +120,11 @@ duplicati_container_labels_traefik_additional_response_headers_custom: {}
 #
 # Example:
 # duplicati_container_labels_additional_labels_custom: |
-#   my.label=1
-#   another.label="here"
-duplicati_container_labels_additional_labels: "{{ duplicati_container_labels_additional_labels_auto | combine(duplicati_container_labels_additional_labels_custom) }}"
-duplicati_container_labels_additional_labels_auto: {}
-duplicati_container_labels_additional_labels_custom: {}
+#   - my.label=1
+#   - another.label="here"
+duplicati_container_labels_additional_labels: "{{ duplicati_container_labels_additional_labels_auto + duplicati_container_labels_additional_labels_custom }}"
+duplicati_container_labels_additional_labels_auto: []
+duplicati_container_labels_additional_labels_custom: []
 
 # A list of extra arguments to pass to the container (`docker create` command)
 duplicati_container_extra_arguments: "{{ duplicati_container_extra_arguments_auto + duplicati_container_extra_arguments_custom }}"

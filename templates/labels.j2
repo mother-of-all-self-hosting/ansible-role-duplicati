@@ -56,4 +56,6 @@ traefik.http.routers.{{ duplicati_identifier }}.tls.certResolver={{ duplicati_co
 traefik.http.services.{{ duplicati_identifier }}.loadbalancer.server.port={{ duplicati_container_http_port }}
 {% endif %}
 
-{{ duplicati_container_labels_additional_labels }}
+{% for arg in duplicati_container_labels_additional_labels %}
+{{ arg }}
+{% endfor %}
