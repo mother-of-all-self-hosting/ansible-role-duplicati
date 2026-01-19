@@ -34,8 +34,8 @@ ExecStartPre={{ devture_systemd_docker_base_host_command_docker }} create \
       --cap-drop=ALL \
       --cap-add=CAP_DAC_OVERRIDE \
       --cap-add=CHOWN \
-      --cap-add=SETUID \
       --cap-add=SETGID \
+      --cap-add=SETUID \
       --network={{ duplicati_container_network }} \
       {% if duplicati_container_http_host_bind_port %}
       -p {{ duplicati_container_http_host_bind_port }}:{{ duplicati_container_http_port }} \
