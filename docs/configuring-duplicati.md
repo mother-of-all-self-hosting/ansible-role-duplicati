@@ -73,6 +73,10 @@ duplicati_source_path: /path/on/the/host
 
 Make sure permissions and owner of the directory specified to `duplicati_source_path`.
 
+###
+
+duplicati_environment_variable_settings_encryption_key
+
 ### Set a password for the UI
 
 You also need to set a log in password on the web UI by adding the following configuration to your `vars.yml` file:
