@@ -37,21 +37,24 @@
         path: "{{ duplicati_container_image_self_build_src_files_path }}"
         state: absent
 
-    - name: Ensure Duplicati container network does not exist via community.docker.docker_network
-      when: devture_systemd_docker_base_container_network_creation_method == 'ansible-module'
-      community.docker.docker_network:
-        name: "{{ duplicati_container_network }}"
-        state: absent
-      register: duplicati_network_deletion_result
+    - name: Ensure Duplicati container network does not exist
+      when: duplicati_container_network_deletion_enabled
+      block:
+        - name: Ensure Duplicati container network does not exist via community.docker.docker_network
+          when: devture_systemd_docker_base_container_network_creation_method == 'ansible-module'
+          community.docker.docker_network:
+            name: "{{ duplicati_container_network }}"
+            state: absent
+          register: duplicati_network_deletion_result
 
-    - name: Ensure Duplicati container network does not exist via ansible.builtin.command
-      when: devture_systemd_docker_base_container_network_creation_method == 'command'
-      ansible.builtin.command:
-        cmd: >-
-          {{ devture_systemd_docker_base_host_command_docker }} network rm
-          {{ duplicati_container_network }}
-      register: duplicati_network_deletion_result
-      changed_when: duplicati_container_network in duplicati_network_deletion_result.stdout
+        - name: Ensure Duplicati container network does not exist via ansible.builtin.command
+          when: devture_systemd_docker_base_container_network_creation_method == 'command'
+          ansible.builtin.command:
+            cmd: >-
+              {{ devture_systemd_docker_base_host_command_docker }} network rm
+              {{ duplicati_container_network }}
+          register: duplicati_network_deletion_result
+          changed_when: duplicati_container_network in duplicati_network_deletion_result.stdout
 
 - name: Check existence of Duplicati local config path
   ansible.builtin.stat:
