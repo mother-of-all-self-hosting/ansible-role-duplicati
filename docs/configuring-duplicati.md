@@ -73,9 +73,15 @@ duplicati_source_path: /path/on/the/host
 
 Make sure permissions and owner of the directory specified to `duplicati_source_path`.
 
-###
+### Set an encryption password for the database
 
-duplicati_environment_variable_settings_encryption_key
+You also need to set an encryption password to protect the database by adding the following configuration to your `vars.yml` file:
+
+```yaml
+duplicati_environment_variable_settings_encryption_key: YOUR_ENCRYPTION_KEY_HERE
+```
+
+Replace `YOUR_ENCRYPTION_KEY_HERE` with your own value.
 
 ### Set a password for the UI
 
