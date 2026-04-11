@@ -62,7 +62,7 @@
   register: duplicati_config_path_stat
 
 # We just want to notify the user. Deleting data is too destructive.
-- name: Notify if Duplicati local config path remains
+- name: Inject the message about the remaining Duplicati local config path
   when: duplicati_config_path_stat.stat.exists | bool
   ansible.builtin.set_fact:
     devture_playbook_runtime_messages_list: |
@@ -80,7 +80,7 @@
   register: duplicati_backup_path_stat
 
 # We just want to notify the user. Deleting data is too destructive.
-- name: Notify if Duplicati local backup path remains
+- name: Inject the message about the remaining Duplicati local backup path
   when: duplicati_backup_path_stat.stat.exists | bool
   ansible.builtin.set_fact:
     devture_playbook_runtime_messages_list: |
