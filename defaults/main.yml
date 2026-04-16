@@ -1,8 +1,8 @@
-# SPDX-FileCopyrightText: 2023 - 2024 Nikita Chernyi
-# SPDX-FileCopyrightText: 2023 - 2025 Slavi Pantaleev
+# SPDX-FileCopyrightText: 2023, 2024 Nikita Chernyi
+# SPDX-FileCopyrightText: 2023-2025 Slavi Pantaleev
 # SPDX-FileCopyrightText: 2024 Sergio Durigan Junior
 # SPDX-FileCopyrightText: 2025 MASH project contributors
-# SPDX-FileCopyrightText: 2025 Suguru Hirahara
+# SPDX-FileCopyrightText: 2025, 2026 Suguru Hirahara
 #
 # SPDX-License-Identifier: AGPL-3.0-or-later
 
@@ -13,8 +13,8 @@ duplicati_enabled: true
 
 duplicati_identifier: duplicati
 duplicati_base_path: "/{{ duplicati_identifier }}"
-duplicati_config_path: "{{ duplicati_base_path }}/config"
 duplicati_backup_path: "{{ duplicati_base_path }}/backup"
+duplicati_config_path: "{{ duplicati_base_path }}/config"
 duplicati_source_path: "" # should be specified by users
 
 # As the official image is available at https://hub.docker.com/r/duplicati/duplicati,
