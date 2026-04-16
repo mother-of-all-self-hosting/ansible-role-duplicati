@@ -37,14 +37,14 @@
         path: "{{ duplicati_container_image_self_build_src_files_path }}"
         state: absent
 
-    - name: Ensure Duplicati local backup path if empty
+    - name: Ensure Duplicati local backup path does not exist if empty
       ansible.builtin.command:
         cmd: "rmdir {{ duplicati_backup_path }}"
       register: duplicati_backup_path_deletion_result
       changed_when: duplicati_backup_path_deletion_result.rc == 0
       failed_when: false
 
-    - name: Ensure Duplicati local config path if empty
+    - name: Ensure Duplicati local config path does not exist if empty
       ansible.builtin.command:
         cmd: "rmdir {{ duplicati_config_path }}"
       register: duplicati_config_path_deletion_result
