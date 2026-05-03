@@ -97,6 +97,9 @@ duplicati_container_labels_traefik_priority: 0
 duplicati_container_labels_traefik_entrypoints: web-secure
 duplicati_container_labels_traefik_tls: "{{ duplicati_container_labels_traefik_entrypoints != 'web' }}"
 duplicati_container_labels_traefik_tls_certResolver: default  # noqa var-naming
+duplicati_container_labels_traefik_middleware_basic_auth_enabled: false
+# See: https://doc.traefik.io/traefik/reference/routing-configuration/http/middlewares/basicauth/
+duplicati_container_labels_traefik_middleware_basic_auth_users: ""
 
 # Controls which additional headers to attach to all HTTP requests.
 # To add your own custom request headers, use `duplicati_container_labels_traefik_additional_request_headers_custom`

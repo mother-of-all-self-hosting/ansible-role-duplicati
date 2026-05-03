@@ -1,5 +1,5 @@
-# SPDX-FileCopyrightText: 2023 - 2025 Slavi Pantaleev
-# SPDX-FileCopyrightText: 2025 Suguru Hirahara
+# SPDX-FileCopyrightText: 2023-2025 Slavi Pantaleev
+# SPDX-FileCopyrightText: 2025, 2026 Suguru Hirahara
 #
 # SPDX-License-Identifier: AGPL-3.0-or-later
 
@@ -16,17 +16,18 @@
 - name: Fail if required Duplicati settings not defined
   ansible.builtin.fail:
     msg: >-
-      You need to define a required configuration setting (`{{ item }}`).
-  when: "lookup('vars', item, default='') | string | length == 0"
+      You need to define a required configuration setting (`{{ item.name }}`).
+  when: "item.when | bool and lookup('vars', item.name, default='') | string | length == 0"
   with_items:
-    - duplicati_uid
-    - duplicati_gid
-    - duplicati_hostname
-    - duplicati_path_prefix
-    - duplicati_container_network
-    - duplicati_source_path
-    - duplicati_environment_variable_settings_encryption_key
-    - duplicati_environment_variable_duplicati__webservice_password
+    - { "name": "duplicati_uid", when: true }
+    - { "name": "duplicati_gid", when: true }
+    - { "name": "duplicati_hostname", when: true }
+    - { "name": "duplicati_path_prefix", when: true }
+    - { "name": "duplicati_container_network", when: true }
+    - { "name": "duplicati_container_labels_traefik_middleware_basic_auth_users", when: "{{ duplicati_container_labels_traefik_middleware_basic_auth_enabled }}" }
+    - { "name": "duplicati_source_path", when: true }
+    - { "name": "duplicati_environment_variable_settings_encryption_key", when: true }
+    - { "name": "duplicati_environment_variable_duplicati__webservice_password", when: true }
 
 - name: Run if Traefik is enabled
   when: duplicati_container_labels_traefik_enabled | bool
