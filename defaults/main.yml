@@ -45,7 +45,6 @@ duplicati_container_image_tag: "{{ duplicati_version }}"
 duplicati_container_image_registry_prefix: "{{ duplicati_container_image_registry_prefix_upstream }}"
 duplicati_container_image_registry_prefix_upstream: "{{ duplicati_container_image_registry_prefix_upstream_default }}"
 duplicati_container_image_registry_prefix_upstream_default: docker.io/
-duplicati_container_image_force_pull: "{{ duplicati_container_image.endswith(':latest') }}"
 
 duplicati_container_image_self_build: false
 duplicati_container_image_self_build_name: "linuxserver/duplicati:{{ duplicati_container_image_self_build_repo_version }}"
