@@ -1,0 +1,53 @@
+# SPDX-FileCopyrightText: 2026 Suguru Hirahara
+# SPDX-FileCopyrightText: 2026 spatterlight
+#
+# SPDX-License-Identifier: AGPL-3.0-or-later
+
+---
+- name: Verify Duplicati systemd service
+  hosts: all
+  become: true
+  gather_facts: false
+  tasks:
+    - name: Wait for Duplicati service to become active (up to 180s)
+      ansible.builtin.systemd:
+        name: duplicati.service
+      register: duplicati_service
+      until: duplicati_service.status.ActiveState == 'active'
+      retries: 36
+      delay: 5
+
+    - name: Assert Duplicati service is active
+      ansible.builtin.assert:
+        that: duplicati_service.status.ActiveState == 'active'
+        fail_msg: "duplicati.service not active ({{ duplicati_service.status.ActiveState }})"
+        success_msg: "duplicati.service is active"
+
+    - name: Retrieve Duplicati service log for debugging
+      when: duplicati_debug_service_enabled | bool
+      ansible.builtin.command:
+        cmd: journalctl -xeu duplicati.service
+      changed_when: false
+
+    - name: Wait for Duplicati HTTP endpoint to respond (up to 10m)
+      ansible.builtin.uri:
+        url: "http://localhost:8200/"
+        method: GET
+        status_code: [200, 302]
+        follow_redirects: none
+      register: duplicati_endpoint
+      until: duplicati_endpoint.status in [200, 302]
+      retries: 120
+      delay: 5
+
+    - name: Assert Duplicati HTTP endpoint responds
+      ansible.builtin.assert:
+        that: duplicati_endpoint.status in [200, 302]
+        fail_msg: "Duplicati did not respond as expected ({{ duplicati_endpoint.status | default('no response') }})"
+        success_msg: "Duplicati responded with {{ duplicati_endpoint.status }}"
+
+    - name: Show Duplicati systemd service status summary
+      ansible.builtin.debug:
+        msg:
+          - "Duplicati systemd: {{ duplicati_service.status.ActiveState }}"
+          - "Duplicati HTTP: {{ duplicati_endpoint.status }}"
