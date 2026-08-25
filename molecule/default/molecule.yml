@@ -79,9 +79,13 @@ scenario:
     - create
     - prepare
     - converge
-    # Idempotence is disabled because the container chmods and chowns
-    # `duplicati_config_path` to suit itself on every start, which the role's
-    # `file` task then reports as changed on the next run.
+    # Idempotence is disabled because the role and the container disagree about
+    # the permissions of `duplicati_config_path`. Duplicati chmods /config to
+    # 0700 while it sets up its settings database, and the role's `file` task
+    # sets it back to 0750 on the next run - `--diff` on that task shows exactly
+    # `-mode: '0700'` / `+mode: '0750'` on /duplicati/config, and nothing else.
+    # It settles after one run, but a Molecule idempotence check converges again
+    # immediately, which is precisely when the drift is there.
     # - idempotence
     - side_effect
     - verify
