@@ -81,7 +81,9 @@ You also need to set an encryption password to protect the database by adding th
 duplicati_environment_variable_settings_encryption_key: YOUR_ENCRYPTION_KEY_HERE
 ```
 
-Replace `YOUR_ENCRYPTION_KEY_HERE` with your own value.
+Replace `YOUR_ENCRYPTION_KEY_HERE` with your own value (minimum 8 alphanumeric characters).
+
+This setting is required. Without it Duplicati refuses to start its web service while the container itself stays up, so the systemd service looks healthy and nothing ever answers on the port.
 
 ### Set a password for the UI
 
@@ -92,6 +94,8 @@ duplicati_environment_variable_duplicati__webservice_password: YOUR_WEBUI_PASSWO
 ```
 
 Replace `YOUR_WEBUI_PASSWORD_HERE` with your own value.
+
+This setting is required as well, and it is worth choosing carefully: when it is unset, the container image falls back to the password `changeme`. Anyone who reaches the UI with that password can browse, read and write every path mounted into the container — for a backup tool that means the data you are backing up as well as the backups themselves.
 
 ### Extending the configuration
 

@@ -230,12 +230,18 @@ duplicati_container_cleanup_command: |
 # Specify the timezone
 duplicati_environment_variables_tz: Etc/UTC
 
-# Specify an encryption key for settings database
+# Specify an encryption key for the settings database.
 # Valid value: minimum 8 characters, alphanumeric
+#
+# This is required (see `../tasks/validate_config.yml`). Without it, the container stays up
+# while Duplicati never starts and nothing ever listens on the HTTP port.
 duplicati_environment_variable_settings_encryption_key: ""
 
-# Specify a password for the web UI
-# If left unset, it will default to `changeme`, which can be changed with the webui settings.
+# Specify a password for the web UI.
+#
+# This is required (see `../tasks/validate_config.yml`), because the container image otherwise
+# falls back to `changeme` - a password anyone can guess for a UI which can read and write
+# every path mounted into the container.
 duplicati_environment_variable_duplicati__webservice_password: ""
 
 # Additional environment variables.
