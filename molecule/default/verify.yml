@@ -55,7 +55,7 @@
 
     - name: Retrieve the Duplicati container definition
       ansible.builtin.command:
-        cmd: "docker inspect {{ duplicati_molecule_expected_identifier }}"
+        cmd: "docker container inspect {{ duplicati_molecule_expected_identifier }}"
       register: duplicati_container_inspect
       changed_when: false
 
