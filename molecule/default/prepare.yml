@@ -1,5 +1,6 @@
-# SPDX-FileCopyrightText: 2026 spatterlight
+# SPDX-FileCopyrightText: 2026 Slavi Pantaleev
 # SPDX-FileCopyrightText: 2026 Suguru Hirahara
+# SPDX-FileCopyrightText: 2026 spatterlight
 #
 # SPDX-License-Identifier: AGPL-3.0-or-later
 
@@ -27,3 +28,23 @@
       vars:
         docker_daemon_options:
           storage-driver: vfs
+
+    # The role does not create `duplicati_source_path` - it is the operator's
+    # own data directory - so the scenario has to provide it, owned by the
+    # container's user so that Duplicati can both read it for a backup and
+    # write to it for a restore.
+    - name: Ensure Duplicati Molecule source directory exists
+      ansible.builtin.file:
+        path: "{{ duplicati_source_path }}"
+        state: directory
+        mode: "0750"
+        owner: "{{ duplicati_uid }}"
+        group: "{{ duplicati_gid }}"
+
+    - name: Ensure Duplicati Molecule canary file exists
+      ansible.builtin.copy:
+        content: "{{ duplicati_molecule_canary_content }}"
+        dest: "{{ duplicati_source_path }}/{{ duplicati_molecule_canary_filename }}"
+        mode: "0640"
+        owner: "{{ duplicati_uid }}"
+        group: "{{ duplicati_gid }}"

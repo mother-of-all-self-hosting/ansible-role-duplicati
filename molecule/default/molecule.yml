@@ -1,5 +1,6 @@
-# SPDX-FileCopyrightText: 2026 spatterlight
+# SPDX-FileCopyrightText: 2026 Slavi Pantaleev
 # SPDX-FileCopyrightText: 2026 Suguru Hirahara
+# SPDX-FileCopyrightText: 2026 spatterlight
 #
 # SPDX-License-Identifier: AGPL-3.0-or-later
 
@@ -31,6 +32,16 @@ provisioner:
         # Helper variables
         duplicati_debug_service_enabled: false
 
+        # The file the scenario backs up and restores. Its content is asserted
+        # byte for byte after the restore, so a backup that silently archives
+        # nothing cannot pass.
+        duplicati_molecule_canary_filename: canary.txt
+        duplicati_molecule_canary_content: "duplicati-molecule-canary-8f3a1c\n"
+
+        # The name of the job the scenario creates over the API, and the
+        # subdirectory of `duplicati_backup_path` it writes its archives into.
+        duplicati_molecule_job_name: molecule-canary
+
         # Variables for Duplicati
         duplicati_uid: 1000
         duplicati_gid: 1000
@@ -38,9 +49,23 @@ provisioner:
         duplicati_hostname: localhost
         duplicati_container_labels_traefik_enabled: false
         duplicati_container_http_host_bind_port: 8200
-        duplicati_source_path: /tmp
-        duplicati_environment_variable_settings_encryption_key: encryption
-        duplicati_environment_variable_duplicati__webservice_password: password
+
+        # A dedicated directory, seeded by prepare.yml, rather than something
+        # like /tmp: the scenario asserts that exactly this host path is what
+        # ends up mounted at /source inside the container.
+        duplicati_source_path: /duplicati-molecule-source
+
+        # Deliberately not Etc/UTC (the role's default), so that the container
+        # reporting this zone can only be explained by env.j2 having reached
+        # the process.
+        duplicati_environment_variables_tz: Asia/Tokyo
+
+        duplicati_environment_variable_settings_encryption_key: moleculesettingskey1
+
+        # Deliberately not `changeme`, which is what the container image falls
+        # back to when DUPLICATI__WEBSERVICE_PASSWORD is unset. verify.yml
+        # asserts that `changeme` is refused and that this value is accepted.
+        duplicati_environment_variable_duplicati__webservice_password: molecule-webui-Pa55w0rd
   env:
     # Workaround for https://github.com/ansible/molecule/issues/4391
     ANSIBLE_ROLES_PATH: ${MOLECULE_PROJECT_DIRECTORY}/..:/.ansible/roles:/usr/share/ansible/roles:/etc/ansible/roles:~/.ansible/roles
@@ -54,7 +79,9 @@ scenario:
     - create
     - prepare
     - converge
-    # Disable idempotence test for now due to /duplicati/config being changed every time
+    # Idempotence is disabled because the container chmods and chowns
+    # `duplicati_config_path` to suit itself on every start, which the role's
+    # `file` task then reports as changed on the next run.
     # - idempotence
     - side_effect
     - verify
