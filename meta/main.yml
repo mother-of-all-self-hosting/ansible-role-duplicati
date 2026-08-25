@@ -3,7 +3,7 @@ galaxy_info:
   author: Suguru Hirahara
   company: progressiv
   role_name: duplicati
-  namespace: progressiv
+  namespace: mash
   description: Duplicati
   platforms:
     - name: Debian
