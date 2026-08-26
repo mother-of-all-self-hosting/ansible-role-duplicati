@@ -9,6 +9,6 @@
     "The Molecule scenario is strong enough that it would earn automerge if the above did not apply, and it is what a reviewer of a minor bump can lean on: it asserts the running server reports the pinned version on the stable channel, that /config, /backup and /source are bound to the role's host paths, that the API refuses unauthenticated requests and refuses `changeme` (the password the image falls back to when DUPLICATI__WEBSERVICE_PASSWORD is unset), and then creates a backup job over the API, runs it against a seeded canary file, clobbers the canary and restores it byte for byte."
   ],
   "extends": [
-    "github>mother-of-all-self-hosting/renovate-config#v1.0.0"
+    "github>mother-of-all-self-hosting/renovate-config#v1.1.0"
   ]
 }
