@@ -364,13 +364,13 @@
           instead of `{{ duplicati_molecule_canary_content }}`
         success_msg: "The canary file survived a backup and restore round trip byte for byte"
 
-    - name: Show Duplicati verification summary
+    - name: Show the Duplicati verification summary
       ansible.builtin.debug:
         msg:
-          - "systemd: {{ duplicati_service.status.ActiveState }}"
-          - "HTTP: {{ duplicati_endpoint.status }}"
-          - "version: {{ duplicati_systeminfo.json.ServerVersionName }} ({{ duplicati_systeminfo.json.ServerVersionType }})"
-          - "image: {{ duplicati_container_definition.Config.Image }}"
-          - "timezone: {{ duplicati_container_timezone.stdout | trim }}"
-          - "backup: {{ duplicati_backup_task.json.Status }}, {{ duplicati_backup_archives.matched }} archive(s)"
-          - "restore: {{ duplicati_restore_task.json.Status }}, canary intact"
+          - "Duplicati systemd: {{ duplicati_service.status.ActiveState }}"
+          - "Duplicati version: {{ duplicati_systeminfo.json.ServerVersionName }} ({{ duplicati_systeminfo.json.ServerVersionType }})"
+          - "Duplicati HTTP: {{ duplicati_endpoint.status }}"
+          - "Duplicati image: {{ duplicati_container_definition.Config.Image }}"
+          - "Duplicati timezone: {{ duplicati_container_timezone.stdout | trim }}"
+          - "Duplicati backup: {{ duplicati_backup_task.json.Status }}, {{ duplicati_backup_archives.matched }} archive(s)"
+          - "Duplicati restore: {{ duplicati_restore_task.json.Status }}, canary intact"
