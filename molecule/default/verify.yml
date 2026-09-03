@@ -188,8 +188,9 @@
         duplicati_molecule_api_headers:
           Authorization: "Bearer {{ duplicati_login.json.AccessToken }}"
 
-    # ── The running version is the one Renovate bumps ───────────────────────
-
+    # The role is not included in this playbook, so its defaults are not in
+    # scope. Reading defaults/main.yml directly ties the version assertion
+    # below.
     - name: Read the Duplicati role defaults
       ansible.builtin.include_vars:
         file: "{{ lookup('env', 'MOLECULE_PROJECT_DIRECTORY') }}/defaults/main.yml"
@@ -206,18 +207,13 @@
     # Duplicati reports four components (`2.3.0.4`) against a three-component
     # image tag (`2.3.0`), so the pinned value is matched as a prefix with a
     # trailing dot rather than compared for equality.
-    - name: Assert the running Duplicati is the version the role pins
+    - name: Assert the running Duplicati is the version this role installs
       ansible.builtin.assert:
         that:
           - duplicati_systeminfo.json.ServerVersion.startswith(duplicati_role_defaults.duplicati_version ~ '.')
           - duplicati_systeminfo.json.ServerVersionType == 'stable'
-        fail_msg: >-
-          Duplicati reports version `{{ duplicati_systeminfo.json.ServerVersionName }}`
-          (channel `{{ duplicati_systeminfo.json.ServerVersionType }}`), which is not a stable release of
-          duplicati_version `{{ duplicati_role_defaults.duplicati_version }}`
-        success_msg: >-
-          Duplicati runs {{ duplicati_systeminfo.json.ServerVersionName }},
-          which is duplicati_version {{ duplicati_role_defaults.duplicati_version }}
+        fail_msg: "Duplicati reports {{ duplicati_systeminfo.json.ServerVersionName | default('none') }}, expected {{ duplicati_role_defaults.duplicati_version }}"
+        success_msg: "Duplicati reports {{ duplicati_systeminfo.json.ServerVersionName }}"
 
     # ── A backup actually backs up, and a restore actually restores ─────────
 
