@@ -191,10 +191,10 @@
     # The role is not included in this playbook, so its defaults are not in
     # scope. Reading defaults/main.yml directly ties the version assertion
     # below.
-    - name: Read the Duplicati role defaults
+    - name: Load the role defaults
       ansible.builtin.include_vars:
         file: "{{ lookup('env', 'MOLECULE_PROJECT_DIRECTORY') }}/defaults/main.yml"
-        name: duplicati_role_defaults
+        name: duplicati_defaults
 
     - name: Retrieve the Duplicati system information
       ansible.builtin.uri:
@@ -210,9 +210,9 @@
     - name: Assert the running Duplicati is the version this role installs
       ansible.builtin.assert:
         that:
-          - duplicati_systeminfo.json.ServerVersion.startswith(duplicati_role_defaults.duplicati_version ~ '.')
+          - duplicati_systeminfo.json.ServerVersion.startswith(duplicati_defaults.duplicati_version ~ '.')
           - duplicati_systeminfo.json.ServerVersionType == 'stable'
-        fail_msg: "Duplicati reports {{ duplicati_systeminfo.json.ServerVersionName | default('none') }}, expected {{ duplicati_role_defaults.duplicati_version }}"
+        fail_msg: "Duplicati reports {{ duplicati_systeminfo.json.ServerVersionName | default('none') }}, expected {{ duplicati_defaults.duplicati_version }}"
         success_msg: "Duplicati reports {{ duplicati_systeminfo.json.ServerVersionName }}"
 
     # ── A backup actually backs up, and a restore actually restores ─────────
