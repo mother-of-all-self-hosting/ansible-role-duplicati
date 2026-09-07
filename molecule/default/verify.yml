@@ -56,12 +56,12 @@
     - name: Retrieve the Duplicati container definition
       ansible.builtin.command:
         cmd: "docker container inspect {{ duplicati_molecule_expected_identifier }}"
-      register: duplicati_container_inspect
+      register: duplicati_container_raw
       changed_when: false
 
     - name: Read the Duplicati container definition
       ansible.builtin.set_fact:
-        duplicati_container_definition: "{{ (duplicati_container_inspect.stdout | from_json)[0] }}"
+        duplicati_container_definition: "{{ (duplicati_container_raw.stdout | from_json)[0] }}"
 
     - name: Read the Duplicati container's bind mounts
       ansible.builtin.set_fact:
