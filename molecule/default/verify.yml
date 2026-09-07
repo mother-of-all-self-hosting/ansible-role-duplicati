@@ -28,24 +28,27 @@
     duplicati_molecule_backup_target_path: "{{ duplicati_molecule_expected_backup_path }}/{{ duplicati_molecule_job_name }}"
 
   tasks:
-    # `Restart=always` in the unit means a crash-looping container still reports
-    # `active`, so this is a precondition for the rest of the file rather than
-    # evidence of anything on its own.
-    - name: Wait for Duplicati service to become active (up to 180s)
-      ansible.builtin.systemd:
+    - name: Wait for the Duplicati systemd service to become active (up to 180s)
+      ansible.builtin.systemd_service:
         name: duplicati.service
       register: duplicati_service
       until: duplicati_service.status.ActiveState == 'active'
       retries: 36
       delay: 5
+      # So that giving up is reported by the assertion below rather than as a
+      # wall of systemd unit properties.
+      failed_when: false
 
-    - name: Assert Duplicati service is active
+    # `Restart=always` in the systemd unit means that even a container which crashes
+    # and gets restarted reads as active here, so this is a precondition rather than
+    # a result.
+    - name: Assert the Duplicati systemd service is active
       ansible.builtin.assert:
         that: duplicati_service.status.ActiveState == 'active'
-        fail_msg: "duplicati.service not active ({{ duplicati_service.status.ActiveState }})"
+        fail_msg: "duplicati.service is not active ({{ duplicati_service.status.ActiveState }})"
         success_msg: "duplicati.service is active"
 
-    - name: Retrieve Duplicati service log for debugging
+    - name: Retrieve the Duplicati systemd service log for debugging
       when: duplicati_debug_service_enabled | bool
       ansible.builtin.command:
         cmd: journalctl -xeu duplicati.service
