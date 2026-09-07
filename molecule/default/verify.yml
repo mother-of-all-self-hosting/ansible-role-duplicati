@@ -53,13 +53,13 @@
 
     # ── The container is wired up the way the role's templates describe ──────
 
-    - name: Retrieve the Duplicati container definition
+    - name: Inspect the Duplicati container
       ansible.builtin.command:
         cmd: "docker container inspect {{ duplicati_molecule_expected_identifier }}"
       register: duplicati_container_raw
       changed_when: false
 
-    - name: Read the Duplicati container definition
+    - name: Inspect the Duplicati container
       ansible.builtin.set_fact:
         duplicati_container_definition: "{{ (duplicati_container_raw.stdout | from_json)[0] }}"
 
