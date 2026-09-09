@@ -28,6 +28,14 @@
     duplicati_molecule_backup_target_path: "{{ duplicati_molecule_expected_backup_path }}/{{ duplicati_molecule_job_name }}"
 
   tasks:
+    # The role is not included in this playbook, so its defaults are not in
+    # scope. Reading defaults/main.yml directly ties the version assertion
+    # below.
+    - name: Load the role defaults
+      ansible.builtin.include_vars:
+        file: "{{ lookup('env', 'MOLECULE_PROJECT_DIRECTORY') }}/defaults/main.yml"
+        name: duplicati_defaults
+
     - name: Wait for the Duplicati systemd service to become active (up to 180s)
       ansible.builtin.systemd_service:
         name: duplicati.service
@@ -190,14 +198,6 @@
       ansible.builtin.set_fact:
         duplicati_molecule_api_headers:
           Authorization: "Bearer {{ duplicati_login.json.AccessToken }}"
-
-    # The role is not included in this playbook, so its defaults are not in
-    # scope. Reading defaults/main.yml directly ties the version assertion
-    # below.
-    - name: Load the role defaults
-      ansible.builtin.include_vars:
-        file: "{{ lookup('env', 'MOLECULE_PROJECT_DIRECTORY') }}/defaults/main.yml"
-        name: duplicati_defaults
 
     - name: Retrieve the Duplicati system information
       ansible.builtin.uri:
