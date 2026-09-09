@@ -30,355 +30,355 @@
   tasks:
     - name: Verify that Duplicati works
       block:
-    # The role is not included in this playbook, so its defaults are not in
-    # scope. Reading defaults/main.yml directly ties the version assertion
-    # below.
-    - name: Load the role defaults
-      ansible.builtin.include_vars:
-        file: "{{ lookup('env', 'MOLECULE_PROJECT_DIRECTORY') }}/defaults/main.yml"
-        name: duplicati_defaults
+        # The role is not included in this playbook, so its defaults are not in
+        # scope. Reading defaults/main.yml directly ties the version assertion
+        # below.
+        - name: Load the role defaults
+          ansible.builtin.include_vars:
+            file: "{{ lookup('env', 'MOLECULE_PROJECT_DIRECTORY') }}/defaults/main.yml"
+            name: duplicati_defaults
 
-    - name: Wait for the Duplicati systemd service to become active (up to 180s)
-      ansible.builtin.systemd_service:
-        name: duplicati.service
-      register: duplicati_service
-      until: duplicati_service.status.ActiveState == 'active'
-      retries: 36
-      delay: 5
-      # So that giving up is reported by the assertion below rather than as a
-      # wall of systemd unit properties.
-      failed_when: false
+        - name: Wait for the Duplicati systemd service to become active (up to 180s)
+          ansible.builtin.systemd_service:
+            name: duplicati.service
+          register: duplicati_service
+          until: duplicati_service.status.ActiveState == 'active'
+          retries: 36
+          delay: 5
+          # So that giving up is reported by the assertion below rather than as a
+          # wall of systemd unit properties.
+          failed_when: false
 
-    # `Restart=always` in the systemd unit means that even a container which crashes
-    # and gets restarted reads as active here, so this is a precondition rather than
-    # a result.
-    - name: Assert the Duplicati systemd service is active
-      ansible.builtin.assert:
-        that: duplicati_service.status.ActiveState == 'active'
-        fail_msg: "duplicati.service is not active ({{ duplicati_service.status.ActiveState }})"
-        success_msg: "duplicati.service is active"
+        # `Restart=always` in the systemd unit means that even a container which crashes
+        # and gets restarted reads as active here, so this is a precondition rather than
+        # a result.
+        - name: Assert the Duplicati systemd service is active
+          ansible.builtin.assert:
+            that: duplicati_service.status.ActiveState == 'active'
+            fail_msg: "duplicati.service is not active ({{ duplicati_service.status.ActiveState }})"
+            success_msg: "duplicati.service is active"
 
-    - name: Retrieve the Duplicati systemd service log for debugging
-      when: duplicati_debug_service_enabled | bool
-      ansible.builtin.command:
-        cmd: journalctl --no-pager --output=cat --unit=duplicati.service
-      changed_when: false
+        - name: Retrieve the Duplicati systemd service log for debugging
+          when: duplicati_debug_service_enabled | bool
+          ansible.builtin.command:
+            cmd: journalctl --no-pager --output=cat --unit=duplicati.service
+          changed_when: false
 
-    # ── The container is wired up the way the role's templates describe ──────
+        # ── The container is wired up the way the role's templates describe ──────
 
-    - name: Inspect the Duplicati container
-      ansible.builtin.command:
-        cmd: "docker container inspect {{ duplicati_molecule_expected_identifier }}"
-      register: duplicati_container_raw
-      changed_when: false
+        - name: Inspect the Duplicati container
+          ansible.builtin.command:
+            cmd: "docker container inspect {{ duplicati_molecule_expected_identifier }}"
+          register: duplicati_container_raw
+          changed_when: false
 
-    - name: Inspect the Duplicati container
-      ansible.builtin.set_fact:
-        duplicati_container_definition: "{{ (duplicati_container_raw.stdout | from_json)[0] }}"
+        - name: Inspect the Duplicati container
+          ansible.builtin.set_fact:
+            duplicati_container_definition: "{{ (duplicati_container_raw.stdout | from_json)[0] }}"
 
-    - name: Read the Duplicati container's bind mounts
-      ansible.builtin.set_fact:
-        duplicati_container_mounts: >-
-          {{
-            dict(
-              duplicati_container_definition.Mounts
-              | map(attribute='Destination') | list
-              | zip(duplicati_container_definition.Mounts | map(attribute='Source') | list)
-            )
-          }}
+        - name: Read the Duplicati container's bind mounts
+          ansible.builtin.set_fact:
+            duplicati_container_mounts: >-
+              {{
+                dict(
+                  duplicati_container_definition.Mounts
+                  | map(attribute='Destination') | list
+                  | zip(duplicati_container_definition.Mounts | map(attribute='Source') | list)
+                )
+              }}
 
-    # A backup tool is only as good as what it can see and where it can write,
-    # so the mount set is part of the role's contract. This also catches the
-    # class of regression where an unrelated volume variable silently drops one
-    # of the three binds out of the unit file.
-    - name: Assert the Duplicati container binds the paths the role manages
-      ansible.builtin.assert:
-        that:
-          - duplicati_container_mounts['/config'] | default('') == duplicati_molecule_expected_config_path
-          - duplicati_container_mounts['/backup'] | default('') == duplicati_molecule_expected_backup_path
-          - duplicati_container_mounts['/source'] | default('') == duplicati_source_path
-        fail_msg: >-
-          Duplicati container mounts are not the role's paths:
-          {{ duplicati_container_mounts }}
-          (expected /config={{ duplicati_molecule_expected_config_path }}, /backup={{ duplicati_molecule_expected_backup_path }}, /source={{ duplicati_source_path }})
-        success_msg: "Duplicati container binds /config, /backup and /source to the role's paths"
+        # A backup tool is only as good as what it can see and where it can write,
+        # so the mount set is part of the role's contract. This also catches the
+        # class of regression where an unrelated volume variable silently drops one
+        # of the three binds out of the unit file.
+        - name: Assert the Duplicati container binds the paths the role manages
+          ansible.builtin.assert:
+            that:
+              - duplicati_container_mounts['/config'] | default('') == duplicati_molecule_expected_config_path
+              - duplicati_container_mounts['/backup'] | default('') == duplicati_molecule_expected_backup_path
+              - duplicati_container_mounts['/source'] | default('') == duplicati_source_path
+            fail_msg: >-
+              Duplicati container mounts are not the role's paths:
+              {{ duplicati_container_mounts }}
+              (expected /config={{ duplicati_molecule_expected_config_path }}, /backup={{ duplicati_molecule_expected_backup_path }}, /source={{ duplicati_source_path }})
+            success_msg: "Duplicati container binds /config, /backup and /source to the role's paths"
 
-    # env.j2 rendered it, `--env-file` carried it, and the process acted on it.
-    # Only the last of those three is proof, which is why the zone is read out
-    # of the running container rather than out of the env file.
-    - name: Retrieve the timezone the Duplicati container runs in
-      ansible.builtin.command:
-        cmd: "docker exec {{ duplicati_molecule_expected_identifier }} date +%Z"
-      register: duplicati_container_timezone
-      changed_when: false
+        # env.j2 rendered it, `--env-file` carried it, and the process acted on it.
+        # Only the last of those three is proof, which is why the zone is read out
+        # of the running container rather than out of the env file.
+        - name: Retrieve the timezone the Duplicati container runs in
+          ansible.builtin.command:
+            cmd: "docker exec {{ duplicati_molecule_expected_identifier }} date +%Z"
+          register: duplicati_container_timezone
+          changed_when: false
 
-    - name: Assert the Duplicati container runs in the configured timezone
-      ansible.builtin.assert:
-        that: duplicati_container_timezone.stdout | trim == 'JST'
-        fail_msg: >-
-          The container reports timezone `{{ duplicati_container_timezone.stdout | trim }}`,
-          so TZ={{ duplicati_environment_variables_tz }} from env.j2 did not reach the process
-        success_msg: "The container runs in the configured timezone ({{ duplicati_environment_variables_tz }})"
+        - name: Assert the Duplicati container runs in the configured timezone
+          ansible.builtin.assert:
+            that: duplicati_container_timezone.stdout | trim == 'JST'
+            fail_msg: >-
+              The container reports timezone `{{ duplicati_container_timezone.stdout | trim }}`,
+              so TZ={{ duplicati_environment_variables_tz }} from env.j2 did not reach the process
+            success_msg: "The container runs in the configured timezone ({{ duplicati_environment_variables_tz }})"
 
-    # ── The web service is up, and it is not open ───────────────────────────
+        # ── The web service is up, and it is not open ───────────────────────────
 
-    # Duplicati refuses to start its web service at all without
-    # SETTINGS_ENCRYPTION_KEY (the image logs "Missing encryption key, unable to
-    # encrypt your settings database" and nothing ever listens on the port), so
-    # an answer here is also evidence that env.j2's key reached the process.
-    #
-    # The API rather than `/` is what is waited on, because the port starts
-    # accepting connections before the API pipeline is serving, and the
-    # supervisor inside the image restarts the server once during first-boot
-    # setup - a window in which `/` answers and the next request is reset. A
-    # connection failure fails the module, which `until` treats as another
-    # reason to retry, so the wait rides that out.
-    - name: Wait for the Duplicati API to start serving (up to 10m)
-      ansible.builtin.uri:
-        url: "{{ duplicati_molecule_api_url }}/api/v1/systeminfo"
-        method: GET
-        status_code: [200, 401]
-        follow_redirects: none
-      register: duplicati_api_probe
-      until: duplicati_api_probe.status | default(-1) in [200, 401]
-      retries: 120
-      delay: 5
+        # Duplicati refuses to start its web service at all without
+        # SETTINGS_ENCRYPTION_KEY (the image logs "Missing encryption key, unable to
+        # encrypt your settings database" and nothing ever listens on the port), so
+        # an answer here is also evidence that env.j2's key reached the process.
+        #
+        # The API rather than `/` is what is waited on, because the port starts
+        # accepting connections before the API pipeline is serving, and the
+        # supervisor inside the image restarts the server once during first-boot
+        # setup - a window in which `/` answers and the next request is reset. A
+        # connection failure fails the module, which `until` treats as another
+        # reason to retry, so the wait rides that out.
+        - name: Wait for the Duplicati API to start serving (up to 10m)
+          ansible.builtin.uri:
+            url: "{{ duplicati_molecule_api_url }}/api/v1/systeminfo"
+            method: GET
+            status_code: [200, 401]
+            follow_redirects: none
+          register: duplicati_api_probe
+          until: duplicati_api_probe.status | default(-1) in [200, 401]
+          retries: 120
+          delay: 5
 
-    # Negative control: the UI is a single-page app that renders for anyone, so
-    # only the API can say whether the instance is actually protected. A 200
-    # here would mean the API answers system information to anyone who asks.
-    - name: Assert the Duplicati API rejects unauthenticated requests
-      ansible.builtin.assert:
-        that: duplicati_api_probe.status == 401
-        fail_msg: >-
-          An unauthenticated request for system information was answered with
-          {{ duplicati_api_probe.status }} instead of 401
-        success_msg: "The Duplicati API rejects unauthenticated requests"
+        # Negative control: the UI is a single-page app that renders for anyone, so
+        # only the API can say whether the instance is actually protected. A 200
+        # here would mean the API answers system information to anyone who asks.
+        - name: Assert the Duplicati API rejects unauthenticated requests
+          ansible.builtin.assert:
+            that: duplicati_api_probe.status == 401
+            fail_msg: >-
+              An unauthenticated request for system information was answered with
+              {{ duplicati_api_probe.status }} instead of 401
+            success_msg: "The Duplicati API rejects unauthenticated requests"
 
-    - name: Wait for the Duplicati web UI to be served (up to 5m)
-      ansible.builtin.uri:
-        url: "{{ duplicati_molecule_api_url }}/"
-        method: GET
-        status_code: [200]
-        follow_redirects: none
-      register: duplicati_endpoint
-      until: duplicati_endpoint.status | default(-1) == 200
-      retries: 60
-      delay: 5
+        - name: Wait for the Duplicati web UI to be served (up to 5m)
+          ansible.builtin.uri:
+            url: "{{ duplicati_molecule_api_url }}/"
+            method: GET
+            status_code: [200]
+            follow_redirects: none
+          register: duplicati_endpoint
+          until: duplicati_endpoint.status | default(-1) == 200
+          retries: 60
+          delay: 5
 
-    # Negative control: the container image falls back to `changeme` when
-    # DUPLICATI__WEBSERVICE_PASSWORD is unset. If the role's password had not
-    # reached the process, this would log in.
-    - name: Assert the container image's fallback web UI password is refused
-      ansible.builtin.uri:
-        url: "{{ duplicati_molecule_api_url }}/api/v1/auth/login"
-        method: POST
-        body_format: json
-        body:
-          Password: changeme
-        status_code: [401]
-        follow_redirects: none
-      register: duplicati_fallback_login
-      until: duplicati_fallback_login.status | default(-1) == 401
-      retries: 12
-      delay: 5
+        # Negative control: the container image falls back to `changeme` when
+        # DUPLICATI__WEBSERVICE_PASSWORD is unset. If the role's password had not
+        # reached the process, this would log in.
+        - name: Assert the container image's fallback web UI password is refused
+          ansible.builtin.uri:
+            url: "{{ duplicati_molecule_api_url }}/api/v1/auth/login"
+            method: POST
+            body_format: json
+            body:
+              Password: changeme
+            status_code: [401]
+            follow_redirects: none
+          register: duplicati_fallback_login
+          until: duplicati_fallback_login.status | default(-1) == 401
+          retries: 12
+          delay: 5
 
-    - name: Log in to the Duplicati API with the configured password
-      ansible.builtin.uri:
-        url: "{{ duplicati_molecule_api_url }}/api/v1/auth/login"
-        method: POST
-        body_format: json
-        body:
-          Password: "{{ duplicati_environment_variable_duplicati__webservice_password }}"
-        status_code: [200]
-      register: duplicati_login
-      until: duplicati_login.status | default(-1) == 200
-      retries: 12
-      delay: 5
+        - name: Log in to the Duplicati API with the configured password
+          ansible.builtin.uri:
+            url: "{{ duplicati_molecule_api_url }}/api/v1/auth/login"
+            method: POST
+            body_format: json
+            body:
+              Password: "{{ duplicati_environment_variable_duplicati__webservice_password }}"
+            status_code: [200]
+          register: duplicati_login
+          until: duplicati_login.status | default(-1) == 200
+          retries: 12
+          delay: 5
 
-    - name: Read the Duplicati API access token
-      ansible.builtin.set_fact:
-        duplicati_molecule_api_headers:
-          Authorization: "Bearer {{ duplicati_login.json.AccessToken }}"
+        - name: Read the Duplicati API access token
+          ansible.builtin.set_fact:
+            duplicati_molecule_api_headers:
+              Authorization: "Bearer {{ duplicati_login.json.AccessToken }}"
 
-    - name: Retrieve the Duplicati system information
-      ansible.builtin.uri:
-        url: "{{ duplicati_molecule_api_url }}/api/v1/systeminfo"
-        method: GET
-        headers: "{{ duplicati_molecule_api_headers }}"
-        status_code: [200]
-      register: duplicati_systeminfo
+        - name: Retrieve the Duplicati system information
+          ansible.builtin.uri:
+            url: "{{ duplicati_molecule_api_url }}/api/v1/systeminfo"
+            method: GET
+            headers: "{{ duplicati_molecule_api_headers }}"
+            status_code: [200]
+          register: duplicati_systeminfo
 
-    # Duplicati reports four components (`2.3.0.4`) against a three-component
-    # image tag (`2.3.0`), so the pinned value is matched as a prefix with a
-    # trailing dot rather than compared for equality.
-    - name: Assert the running Duplicati is the version this role installs
-      ansible.builtin.assert:
-        that:
-          - duplicati_systeminfo.json.ServerVersion.startswith(duplicati_defaults.duplicati_version ~ '.')
-          - duplicati_systeminfo.json.ServerVersionType == 'stable'
-        fail_msg: "Duplicati reports {{ duplicati_systeminfo.json.ServerVersionName | default('none') }}, expected {{ duplicati_defaults.duplicati_version }}"
-        success_msg: "Duplicati reports {{ duplicati_systeminfo.json.ServerVersionName }}"
+        # Duplicati reports four components (`2.3.0.4`) against a three-component
+        # image tag (`2.3.0`), so the pinned value is matched as a prefix with a
+        # trailing dot rather than compared for equality.
+        - name: Assert the running Duplicati is the version this role installs
+          ansible.builtin.assert:
+            that:
+              - duplicati_systeminfo.json.ServerVersion.startswith(duplicati_defaults.duplicati_version ~ '.')
+              - duplicati_systeminfo.json.ServerVersionType == 'stable'
+            fail_msg: "Duplicati reports {{ duplicati_systeminfo.json.ServerVersionName | default('none') }}, expected {{ duplicati_defaults.duplicati_version }}"
+            success_msg: "Duplicati reports {{ duplicati_systeminfo.json.ServerVersionName }}"
 
-    # ── A backup actually backs up, and a restore actually restores ─────────
+        # ── A backup actually backs up, and a restore actually restores ─────────
 
-    - name: Create a Duplicati backup job over the API
-      ansible.builtin.uri:
-        url: "{{ duplicati_molecule_api_url }}/api/v1/backups"
-        method: POST
-        headers: "{{ duplicati_molecule_api_headers }}"
-        body_format: json
-        body:
-          Backup:
-            Name: "{{ duplicati_molecule_job_name }}"
-            Description: ""
-            Tags: []
-            TargetURL: "file:///backup/{{ duplicati_molecule_job_name }}"
-            Settings:
-              - {Name: "encryption-module", Value: ""}
-              - {Name: "compression-module", Value: "zip"}
-              - {Name: "--no-encryption", Value: "true"}
-              - {Name: "passphrase", Value: ""}
-            Filters: []
-            Sources:
-              - /source/
-          Schedule: null
-        status_code: [200]
-      register: duplicati_job_creation
+        - name: Create a Duplicati backup job over the API
+          ansible.builtin.uri:
+            url: "{{ duplicati_molecule_api_url }}/api/v1/backups"
+            method: POST
+            headers: "{{ duplicati_molecule_api_headers }}"
+            body_format: json
+            body:
+              Backup:
+                Name: "{{ duplicati_molecule_job_name }}"
+                Description: ""
+                Tags: []
+                TargetURL: "file:///backup/{{ duplicati_molecule_job_name }}"
+                Settings:
+                  - {Name: "encryption-module", Value: ""}
+                  - {Name: "compression-module", Value: "zip"}
+                  - {Name: "--no-encryption", Value: "true"}
+                  - {Name: "passphrase", Value: ""}
+                Filters: []
+                Sources:
+                  - /source/
+              Schedule: null
+            status_code: [200]
+          register: duplicati_job_creation
 
-    - name: Run the Duplicati backup job
-      ansible.builtin.uri:
-        url: "{{ duplicati_molecule_api_url }}/api/v1/backup/{{ duplicati_job_creation.json.ID }}/run"
-        method: POST
-        headers: "{{ duplicati_molecule_api_headers }}"
-        status_code: [200]
-      register: duplicati_backup_run
+        - name: Run the Duplicati backup job
+          ansible.builtin.uri:
+            url: "{{ duplicati_molecule_api_url }}/api/v1/backup/{{ duplicati_job_creation.json.ID }}/run"
+            method: POST
+            headers: "{{ duplicati_molecule_api_headers }}"
+            status_code: [200]
+          register: duplicati_backup_run
 
-    - name: Wait for the Duplicati backup task to finish (up to 5m)
-      ansible.builtin.uri:
-        url: "{{ duplicati_molecule_api_url }}/api/v1/task/{{ duplicati_backup_run.json.ID }}"
-        method: GET
-        headers: "{{ duplicati_molecule_api_headers }}"
-        status_code: [200]
-      register: duplicati_backup_task
-      until: duplicati_backup_task.json.TaskFinished is not none
-      retries: 60
-      delay: 5
+        - name: Wait for the Duplicati backup task to finish (up to 5m)
+          ansible.builtin.uri:
+            url: "{{ duplicati_molecule_api_url }}/api/v1/task/{{ duplicati_backup_run.json.ID }}"
+            method: GET
+            headers: "{{ duplicati_molecule_api_headers }}"
+            status_code: [200]
+          register: duplicati_backup_task
+          until: duplicati_backup_task.json.TaskFinished is not none
+          retries: 60
+          delay: 5
 
-    - name: Assert the Duplicati backup task succeeded
-      ansible.builtin.assert:
-        that:
-          - duplicati_backup_task.json.Status == 'Completed'
-          - duplicati_backup_task.json.ErrorMessage is none
-        fail_msg: >-
-          The backup task finished as `{{ duplicati_backup_task.json.Status }}`:
-          {{ duplicati_backup_task.json.ErrorMessage | default('no error message') }}
-        success_msg: "The backup task completed"
+        - name: Assert the Duplicati backup task succeeded
+          ansible.builtin.assert:
+            that:
+              - duplicati_backup_task.json.Status == 'Completed'
+              - duplicati_backup_task.json.ErrorMessage is none
+            fail_msg: >-
+              The backup task finished as `{{ duplicati_backup_task.json.Status }}`:
+              {{ duplicati_backup_task.json.ErrorMessage | default('no error message') }}
+            success_msg: "The backup task completed"
 
-    # The job wrote to `file:///backup/...` inside the container. Finding its
-    # archives at `duplicati_backup_path` on the host is what proves the
-    # /backup bind is the role's directory and not a container-local one.
-    - name: Find the archives the Duplicati backup produced on the host
-      ansible.builtin.find:
-        paths: "{{ duplicati_molecule_backup_target_path }}"
-        patterns: "*.dlist.zip"
-      register: duplicati_backup_archives
+        # The job wrote to `file:///backup/...` inside the container. Finding its
+        # archives at `duplicati_backup_path` on the host is what proves the
+        # /backup bind is the role's directory and not a container-local one.
+        - name: Find the archives the Duplicati backup produced on the host
+          ansible.builtin.find:
+            paths: "{{ duplicati_molecule_backup_target_path }}"
+            patterns: "*.dlist.zip"
+          register: duplicati_backup_archives
 
-    - name: Assert the Duplicati backup landed in the role's backup path
-      ansible.builtin.assert:
-        that: duplicati_backup_archives.matched > 0
-        fail_msg: >-
-          No `*.dlist.zip` archive under {{ duplicati_molecule_backup_target_path }},
-          so the backup did not reach the host path the role manages
-        success_msg: >-
-          The backup wrote {{ duplicati_backup_archives.matched }} archive(s)
-          to {{ duplicati_molecule_backup_target_path }}
+        - name: Assert the Duplicati backup landed in the role's backup path
+          ansible.builtin.assert:
+            that: duplicati_backup_archives.matched > 0
+            fail_msg: >-
+              No `*.dlist.zip` archive under {{ duplicati_molecule_backup_target_path }},
+              so the backup did not reach the host path the role manages
+            success_msg: >-
+              The backup wrote {{ duplicati_backup_archives.matched }} archive(s)
+              to {{ duplicati_molecule_backup_target_path }}
 
-    - name: Overwrite the canary file so that a restore has something to prove
-      ansible.builtin.copy:
-        content: "clobbered before restore\n"
-        dest: "{{ duplicati_molecule_canary_path }}"
-        mode: "0640"
-        owner: "{{ duplicati_uid }}"
-        group: "{{ duplicati_gid }}"
+        - name: Overwrite the canary file so that a restore has something to prove
+          ansible.builtin.copy:
+            content: "clobbered before restore\n"
+            dest: "{{ duplicati_molecule_canary_path }}"
+            mode: "0640"
+            owner: "{{ duplicati_uid }}"
+            group: "{{ duplicati_gid }}"
 
-    - name: Retrieve the Duplicati backup filesets
-      ansible.builtin.uri:
-        url: "{{ duplicati_molecule_api_url }}/api/v1/backup/{{ duplicati_job_creation.json.ID }}/filesets"
-        method: GET
-        headers: "{{ duplicati_molecule_api_headers }}"
-        status_code: [200]
-      register: duplicati_filesets
+        - name: Retrieve the Duplicati backup filesets
+          ansible.builtin.uri:
+            url: "{{ duplicati_molecule_api_url }}/api/v1/backup/{{ duplicati_job_creation.json.ID }}/filesets"
+            method: GET
+            headers: "{{ duplicati_molecule_api_headers }}"
+            status_code: [200]
+          register: duplicati_filesets
 
-    - name: Assert the Duplicati backup produced a fileset
-      ansible.builtin.assert:
-        that: duplicati_filesets.json | length > 0
-        fail_msg: "The backup job reports no filesets, so nothing was ever archived"
-        success_msg: "The backup job reports {{ duplicati_filesets.json | length }} fileset(s)"
+        - name: Assert the Duplicati backup produced a fileset
+          ansible.builtin.assert:
+            that: duplicati_filesets.json | length > 0
+            fail_msg: "The backup job reports no filesets, so nothing was ever archived"
+            success_msg: "The backup job reports {{ duplicati_filesets.json | length }} fileset(s)"
 
-    - name: Restore the canary file from the Duplicati backup
-      ansible.builtin.uri:
-        url: "{{ duplicati_molecule_api_url }}/api/v1/backup/{{ duplicati_job_creation.json.ID }}/restore"
-        method: POST
-        headers: "{{ duplicati_molecule_api_headers }}"
-        body_format: json
-        body:
-          paths:
-            - "/source/{{ duplicati_molecule_canary_filename }}"
-          time: "{{ duplicati_filesets.json[0].Time }}"
-          overwrite: true
-          permissions: false
-          passphrase: ""
-        status_code: [200]
-      register: duplicati_restore_run
+        - name: Restore the canary file from the Duplicati backup
+          ansible.builtin.uri:
+            url: "{{ duplicati_molecule_api_url }}/api/v1/backup/{{ duplicati_job_creation.json.ID }}/restore"
+            method: POST
+            headers: "{{ duplicati_molecule_api_headers }}"
+            body_format: json
+            body:
+              paths:
+                - "/source/{{ duplicati_molecule_canary_filename }}"
+              time: "{{ duplicati_filesets.json[0].Time }}"
+              overwrite: true
+              permissions: false
+              passphrase: ""
+            status_code: [200]
+          register: duplicati_restore_run
 
-    - name: Wait for the Duplicati restore task to finish (up to 5m)
-      ansible.builtin.uri:
-        url: "{{ duplicati_molecule_api_url }}/api/v1/task/{{ duplicati_restore_run.json.ID }}"
-        method: GET
-        headers: "{{ duplicati_molecule_api_headers }}"
-        status_code: [200]
-      register: duplicati_restore_task
-      until: duplicati_restore_task.json.TaskFinished is not none
-      retries: 60
-      delay: 5
+        - name: Wait for the Duplicati restore task to finish (up to 5m)
+          ansible.builtin.uri:
+            url: "{{ duplicati_molecule_api_url }}/api/v1/task/{{ duplicati_restore_run.json.ID }}"
+            method: GET
+            headers: "{{ duplicati_molecule_api_headers }}"
+            status_code: [200]
+          register: duplicati_restore_task
+          until: duplicati_restore_task.json.TaskFinished is not none
+          retries: 60
+          delay: 5
 
-    - name: Assert the Duplicati restore task succeeded
-      ansible.builtin.assert:
-        that:
-          - duplicati_restore_task.json.Status == 'Completed'
-          - duplicati_restore_task.json.ErrorMessage is none
-        fail_msg: >-
-          The restore task finished as `{{ duplicati_restore_task.json.Status }}`:
-          {{ duplicati_restore_task.json.ErrorMessage | default('no error message') }}
-        success_msg: "The restore task completed"
+        - name: Assert the Duplicati restore task succeeded
+          ansible.builtin.assert:
+            that:
+              - duplicati_restore_task.json.Status == 'Completed'
+              - duplicati_restore_task.json.ErrorMessage is none
+            fail_msg: >-
+              The restore task finished as `{{ duplicati_restore_task.json.Status }}`:
+              {{ duplicati_restore_task.json.ErrorMessage | default('no error message') }}
+            success_msg: "The restore task completed"
 
-    - name: Read the restored canary file
-      ansible.builtin.slurp:
-        src: "{{ duplicati_molecule_canary_path }}"
-      register: duplicati_restored_canary
+        - name: Read the restored canary file
+          ansible.builtin.slurp:
+            src: "{{ duplicati_molecule_canary_path }}"
+          register: duplicati_restored_canary
 
-    # The whole point of the role. A green suite without this assert would only
-    # say that a backup program was started, not that it can back anything up.
-    - name: Assert the restored canary file is byte-identical to the original
-      ansible.builtin.assert:
-        that: duplicati_restored_canary.content | b64decode == duplicati_molecule_canary_content
-        fail_msg: >-
-          The restored file reads
-          `{{ duplicati_restored_canary.content | b64decode }}`
-          instead of `{{ duplicati_molecule_canary_content }}`
-        success_msg: "The canary file survived a backup and restore round trip byte for byte"
+        # The whole point of the role. A green suite without this assert would only
+        # say that a backup program was started, not that it can back anything up.
+        - name: Assert the restored canary file is byte-identical to the original
+          ansible.builtin.assert:
+            that: duplicati_restored_canary.content | b64decode == duplicati_molecule_canary_content
+            fail_msg: >-
+              The restored file reads
+              `{{ duplicati_restored_canary.content | b64decode }}`
+              instead of `{{ duplicati_molecule_canary_content }}`
+            success_msg: "The canary file survived a backup and restore round trip byte for byte"
 
-    - name: Show the Duplicati verification summary
-      ansible.builtin.debug:
-        msg:
-          - "Duplicati systemd: {{ duplicati_service.status.ActiveState }}"
-          - "Duplicati version: {{ duplicati_systeminfo.json.ServerVersionName }} ({{ duplicati_systeminfo.json.ServerVersionType }})"
-          - "Duplicati HTTP: {{ duplicati_endpoint.status }}"
-          - "Duplicati image: {{ duplicati_container_definition.Config.Image }}"
-          - "Duplicati timezone: {{ duplicati_container_timezone.stdout | trim }}"
-          - "Duplicati backup: {{ duplicati_backup_task.json.Status }}, {{ duplicati_backup_archives.matched }} archive(s)"
-          - "Duplicati restore: {{ duplicati_restore_task.json.Status }}, canary intact"
+        - name: Show the Duplicati verification summary
+          ansible.builtin.debug:
+            msg:
+              - "Duplicati systemd: {{ duplicati_service.status.ActiveState }}"
+              - "Duplicati version: {{ duplicati_systeminfo.json.ServerVersionName }} ({{ duplicati_systeminfo.json.ServerVersionType }})"
+              - "Duplicati HTTP: {{ duplicati_endpoint.status }}"
+              - "Duplicati image: {{ duplicati_container_definition.Config.Image }}"
+              - "Duplicati timezone: {{ duplicati_container_timezone.stdout | trim }}"
+              - "Duplicati backup: {{ duplicati_backup_task.json.Status }}, {{ duplicati_backup_archives.matched }} archive(s)"
+              - "Duplicati restore: {{ duplicati_restore_task.json.Status }}, canary intact"
 
       rescue:
         # Whatever went wrong, the reason is almost always in the systemd service log.
