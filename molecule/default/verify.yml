@@ -27,6 +27,9 @@
     duplicati_molecule_canary_path: "{{ duplicati_source_path }}/{{ duplicati_molecule_canary_filename }}"
     duplicati_molecule_backup_target_path: "{{ duplicati_molecule_expected_backup_path }}/{{ duplicati_molecule_job_name }}"
 
+    duplicati_verify_units:
+      - duplicati.service
+
   tasks:
     - name: Verify that Duplicati works
       block:
@@ -38,13 +41,14 @@
             file: "{{ lookup('env', 'MOLECULE_PROJECT_DIRECTORY') }}/defaults/main.yml"
             name: duplicati_defaults
 
-        - name: Wait for the Duplicati systemd service to become active (up to 180s)
+        - name: Wait for the Duplicati systemd services to become active (up to 180s each)
           ansible.builtin.systemd_service:
-            name: duplicati.service
-          register: duplicati_service
-          until: duplicati_service.status.ActiveState == 'active'
+            name: "{{ item }}"
+          register: duplicati_services
+          until: duplicati_services.status.ActiveState == 'active'
           retries: 36
           delay: 5
+          loop: "{{ duplicati_verify_units }}"
           # So that giving up is reported by the assertion below rather than as a
           # wall of systemd unit properties.
           failed_when: false
@@ -52,17 +56,20 @@
         # `Restart=always` in the systemd unit means that even a container which crashes
         # and gets restarted reads as active here, so this is a precondition rather than
         # a result.
-        - name: Assert the Duplicati systemd service is active
+        - name: Assert the Duplicati systemd services are active
           ansible.builtin.assert:
-            that: duplicati_service.status.ActiveState == 'active'
-            fail_msg: "duplicati.service is not active ({{ duplicati_service.status.ActiveState }})"
-            success_msg: "duplicati.service is active"
+            that: duplicati_services.results | map(attribute='status.ActiveState') | unique | list == ['active']
+            fail_msg: >-
+              Not every service is active:
+              {{ dict(duplicati_verify_units | zip(duplicati_services.results | map(attribute='status.ActiveState'))) }}
+            success_msg: "Every systemd service is active"
 
-        - name: Retrieve the Duplicati systemd service log for debugging
+        - name: Retrieve the Duplicati systemd services log for debugging
           when: duplicati_debug_service_enabled | bool
           ansible.builtin.command:
-            cmd: journalctl --no-pager --output=cat --unit=duplicati.service
+            cmd: "journalctl --no-pager --output=cat --unit={{ item }}"
           changed_when: false
+          loop: "{{ duplicati_verify_units }}"
 
         # ── The container is wired up the way the role's templates describe ──────
 
@@ -372,7 +379,7 @@
         - name: Show the Duplicati verification summary
           ansible.builtin.debug:
             msg:
-              - "Duplicati systemd: {{ duplicati_service.status.ActiveState }}"
+              - "Duplicati systemd: {% for unit, state in duplicati_verify_units | zip(duplicati_services.results | map(attribute='status.ActiveState')) %}{{ unit }} ({{ state }}){% if not loop.last %}, {% endif %}{% endfor %}"
               - "Duplicati version: {{ duplicati_systeminfo.json.ServerVersionName }} ({{ duplicati_systeminfo.json.ServerVersionType }})"
               - "Duplicati HTTP: {{ duplicati_endpoint.status }}"
               - "Duplicati image: {{ duplicati_container_definition.Config.Image }}"
