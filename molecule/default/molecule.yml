@@ -1,6 +1,6 @@
 # SPDX-FileCopyrightText: 2026 Slavi Pantaleev
-# SPDX-FileCopyrightText: 2026 Suguru Hirahara
 # SPDX-FileCopyrightText: 2026 spatterlight
+# SPDX-FileCopyrightText: 2026 Suguru Hirahara
 #
 # SPDX-License-Identifier: AGPL-3.0-or-later
 
@@ -31,6 +31,7 @@ provisioner:
       all:
         # Helper variables
         duplicati_debug_service_enabled: false
+        duplicati_restarts_check_enabled: true
 
         # The file the scenario backs up and restores. Its content is asserted
         # byte for byte after the restore, so a backup that silently archives
