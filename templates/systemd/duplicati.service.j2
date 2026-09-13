@@ -32,6 +32,7 @@ ExecStartPre={{ devture_systemd_docker_base_host_command_docker }} create \
       --log-driver=none \
       --cap-drop=ALL \
       --cap-add=CAP_DAC_OVERRIDE \
+      --cap-add=CAP_FOWNER \
       --cap-add=CHOWN \
       --cap-add=SETGID \
       --cap-add=SETUID \
