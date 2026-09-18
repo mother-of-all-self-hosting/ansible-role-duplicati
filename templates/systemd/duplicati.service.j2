@@ -51,7 +51,10 @@ ExecStartPre={{ devture_systemd_docker_base_host_command_docker }} create \
       {% for arg in duplicati_container_extra_arguments %}
       {{ arg }} \
       {% endfor %}
-      {{ duplicati_container_image_self_build_name if duplicati_container_image_self_build else duplicati_container_image }}
+      {{ duplicati_container_image_self_build_name if duplicati_container_image_self_build else duplicati_container_image }} \
+      {% for arg in duplicati_process_extra_arguments %}
+      {{ arg }} \
+      {% endfor %}
 
 {% for network in duplicati_container_additional_networks %}
 ExecStartPre={{ devture_systemd_docker_base_host_command_docker }} network connect {{ network }} {{ duplicati_identifier }}
