@@ -81,16 +81,16 @@
 
         - name: Inspect the Duplicati container
           ansible.builtin.set_fact:
-            duplicati_container_definition: "{{ (duplicati_container_raw.stdout | from_json)[0] }}"
+            duplicati_container: "{{ (duplicati_container_raw.stdout | from_json)[0] }}"
 
         - name: Read the Duplicati container's bind mounts
           ansible.builtin.set_fact:
             duplicati_container_mounts: >-
               {{
                 dict(
-                  duplicati_container_definition.Mounts
+                  duplicati_container.Mounts
                   | map(attribute='Destination') | list
-                  | zip(duplicati_container_definition.Mounts | map(attribute='Source') | list)
+                  | zip(duplicati_container.Mounts | map(attribute='Source') | list)
                 )
               }}
 
@@ -422,7 +422,7 @@
               - "Duplicati restarts: {% for unit, restarts in duplicati_verify_units | zip(duplicati_restarts_after.results | map(attribute='status.NRestarts')) %}{{ restarts }} ({{ unit }}){% if not loop.last %}, {% endif %}{% endfor %}"
               - "Duplicati version: {{ duplicati_systeminfo.json.ServerVersionName }} ({{ duplicati_systeminfo.json.ServerVersionType }})"
               - "Duplicati HTTP: {{ duplicati_endpoint.status }}"
-              - "Duplicati image: {{ duplicati_container_definition.Config.Image }}"
+              - "Duplicati image: {{ duplicati_container.Config.Image }}"
               - "Duplicati timezone: {{ duplicati_container_timezone.stdout | trim }}"
               - "Duplicati backup: {{ duplicati_backup_task.json.Status }}, {{ duplicati_backup_archives.matched }} archive(s)"
               - "Duplicati restore: {{ duplicati_restore_task.json.Status }}, canary intact"
