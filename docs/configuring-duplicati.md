@@ -27,7 +27,7 @@ See the project's [documentation](https://docs.duplicati.com) to learn what Dupl
 >[!NOTE]
 > As the Duplicati instance runs as the Docker container, it is necessary to mount the directory which includes files to back up on the host machine. Note that it is not able for the container to access files **outside of the mounted directory**.
 >
-> If you wish to manage a backup of directories on the machine without such restriction, you might probably want to consider to install Duplicati directly on the host machine. See [this page on the official documentation](https://docs.duplicati.com/getting-started/installation) for details.
+> If you wish to manage a backup of directories on the machine without such restriction, you might probably want to consider to install Duplicati directly on the host machine. Refer to [this page on the official documentation](https://docs.duplicati.com/getting-started/installation) for details.
 
 ## Adjusting the playbook configuration
 
