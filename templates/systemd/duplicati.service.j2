@@ -29,6 +29,7 @@ ExecStartPre={{ devture_systemd_docker_base_host_command_sh }} -c '{{ duplicati_
 ExecStartPre={{ devture_systemd_docker_base_host_command_docker }} create \
       --rm \
       --name={{ duplicati_identifier }} \
+      --user=0:0 \
       --log-driver=none \
       --cap-drop=ALL \
       --cap-add=CAP_DAC_OVERRIDE \
