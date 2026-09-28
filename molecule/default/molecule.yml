@@ -72,8 +72,6 @@ provisioner:
 
         duplicati_hostname: duplicati.molecule.local
 
-        duplicati_path_prefix: /
-
         # Bound to the loopback interface of the test container only. Nothing
         # is published to the machine running Molecule, so two scenarios can
         # run side by side without fighting over a port.

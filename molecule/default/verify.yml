@@ -22,7 +22,6 @@
     duplicati_expected_uid: 1717
     duplicati_expected_gid: 1717
     duplicati_expected_hostname: duplicati.molecule.local
-    duplicati_expected_path_prefix: /duplicati-ui
     duplicati_expected_timezone: Asia/Tokyo
     duplicati_expected_timezone_abbreviation: JST
 
@@ -170,6 +169,55 @@
               The container runs {{ duplicati_container.Config.Image }}, not the
               {{ duplicati_defaults.duplicati_version }} pinned in defaults/main.yml
             success_msg: "The container runs {{ duplicati_container.Config.Image }}"
+
+        # ------------------------------------------------------------------
+        # Traefik labels
+        # ------------------------------------------------------------------
+
+        - name: Assert that the Traefik labels describe the configured hostname
+          ansible.builtin.assert:
+            that:
+              - duplicati_container.Config.Labels['traefik.enable'] == 'true'
+              - duplicati_container.Config.Labels['traefik.http.services.duplicati.loadbalancer.server.port'] == '8200'
+            fail_msg: "The Traefik labels are not what templates/labels.j2 should have produced: {{ duplicati_container.Config.Labels }}"
+            success_msg: "The Traefik labels route {{ duplicati_expected_hostname }} to port 8200"
+
+        - name: Assert that the additional labels and extra arguments reached the container
+          ansible.builtin.assert:
+            that:
+              - duplicati_container.Config.Labels['mash.molecule.additional-label'] == 'set-by-the-role'
+              - duplicati_container.Config.Labels['mash.molecule.extra-argument'] == 'set-by-the-role'
+            fail_msg: >-
+              duplicati_container_labels_additional_labels or
+              duplicati_container_extra_arguments did not reach the container:
+              {{ duplicati_container.Config.Labels }}
+            success_msg: "The additional label and the extra argument both reached the container"
+
+        # ------------------------------------------------------------------
+        # What the process inside the container actually sees
+        # ------------------------------------------------------------------
+
+        - name: Ask the Duplicati container which timezone and user it is running in
+          ansible.builtin.command:
+            cmd: docker exec duplicati sh -c 'date +%Z; id -u; id -g'
+          register: duplicati_process_identity
+          changed_when: false
+
+        # Unlike other services whose container image is provided by linuxserver.io,
+        # Duplicati's container does not support running as non-root user.
+        - name: Assert that the Duplicati process runs in the role's timezone, as the root user
+          ansible.builtin.assert:
+            that:
+              - duplicati_process_identity.stdout_lines[0] == duplicati_expected_timezone_abbreviation
+              - duplicati_process_identity.stdout_lines[1] == "0"
+              - duplicati_process_identity.stdout_lines[2] == "0"
+            fail_msg: >-
+              The container reports zone/uid/gid {{ duplicati_process_identity.stdout_lines }},
+              expected [{{ duplicati_expected_timezone_abbreviation }},
+              0, 0]
+            success_msg: >-
+              The Duplicati process runs in {{ duplicati_process_identity.stdout_lines[0] }}
+              as {{ duplicati_process_identity.stdout_lines[1] }}:{{ duplicati_process_identity.stdout_lines[2] }}
 
         # ------------------------------------------------------------------
         # The web service is up, and it is not open
