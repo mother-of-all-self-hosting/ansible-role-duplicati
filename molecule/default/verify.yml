@@ -133,27 +133,27 @@
             fail_msg: "The additional volume did not carry the marker into the container"
             success_msg: "The additional volume carries the marker into the container"
 
-        - name: Assert that the role's uid and gid reached the container
+        # Unlike other services whose container image is provided by linuxserver.io,
+        # Duplicati's container does not support running as non-root user. Values specified
+        # with PUID and PGID are applied after the container is started.
+        - name: Assert that the container itself runs as root
           ansible.builtin.assert:
             that:
-              - duplicati_container.Config.User == (duplicati_expected_uid | string) ~ ':' ~ (duplicati_expected_gid | string)
-              - ('PUID=' ~ duplicati_expected_uid) in duplicati_container.Config.Env
-              - ('PGID=' ~ duplicati_expected_gid) in duplicati_container.Config.Env
+              - duplicati_container.Config.User == '0:0'
             fail_msg: >-
-              The container runs as {{ duplicati_container.Config.User }}
-              with {{ duplicati_container.Config.Env | select('match', 'P[UG]ID=') | list }}
-            success_msg: "The container runs as {{ duplicati_container.Config.User }} and carries the matching PUID/PGID"
+              The container itself runs as root.
+            success_msg: "The container runs as {{ duplicati_container.Config.User }}"
 
+        # See the comment on the previous step.
         - name: Assert that the role's uid and gid reached the container
           ansible.builtin.assert:
             that:
-              - duplicati_container.Config.User == (duplicati_expected_uid | string) ~ ':' ~ (duplicati_expected_gid | string)
               - ('PUID=' ~ duplicati_expected_uid) in duplicati_container.Config.Env
               - ('PGID=' ~ duplicati_expected_gid) in duplicati_container.Config.Env
             fail_msg: >-
-              The container runs as {{ duplicati_container.Config.User }}
+              The container runs
               with {{ duplicati_container.Config.Env | select('match', 'P[UG]ID=') | list }}
-            success_msg: "The container runs as {{ duplicati_container.Config.User }} and carries the matching PUID/PGID"
+            success_msg: "The container carries the matching PUID/PGID"
 
         - name: Assert that the role's timezone reached the container environment
           ansible.builtin.assert:
