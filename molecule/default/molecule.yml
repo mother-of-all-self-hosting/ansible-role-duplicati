@@ -33,6 +33,20 @@ provisioner:
         duplicati_debug_service_enabled: false
         duplicati_restarts_check_enabled: true
 
+        # The host directory mounted into the container through
+        # `duplicati_container_additional_volumes_custom`, and the file placed in it by
+        # prepare.yml. Reading that file from inside the container is what
+        # proves the additional volumes reach the systemd unit rather than
+        # being merely declared in defaults/main.yml.
+        duplicati_molecule_extra_volume_src: /duplicati-molecule-extra
+        duplicati_molecule_extra_volume_dst: /molecule-extra
+        duplicati_molecule_extra_volume_marker: only-a-real-bind-mount-can-read-this
+
+        # Files placed on the host under the paths the role bind-mounts. Jackett
+        # itself is asked to list them back, so a mount that docker accepted but
+        # the process cannot see does not pass.
+        duplicati_molecule_marker_filename: duplicati-molecule-marker.txt
+
         # The file the scenario backs up and restores. Its content is asserted
         # byte for byte after the restore, so a backup that silently archives
         # nothing cannot pass.
@@ -44,21 +58,46 @@ provisioner:
         duplicati_molecule_job_name: molecule-canary
 
         # Variables for Duplicati
-        duplicati_uid: 1000
-        duplicati_gid: 1000
-        duplicati_scheme: http
-        duplicati_hostname: localhost
-        duplicati_container_labels_traefik_enabled: false
-        duplicati_container_http_host_bind_port: 8200
+        #
+        # Deliberately not 1000: the linuxserver.io PUID/PGID pattern has left a
+        # needed directory unwritable in other roles of this fleet, and a uid
+        # that exists in the test image by accident would hide that.
+        duplicati_uid: 1717
+        duplicati_gid: 1717
 
         # A dedicated directory, seeded by prepare.yml, rather than something
         # like /tmp: the scenario asserts that exactly this host path is what
         # ends up mounted at /source inside the container.
         duplicati_source_path: /duplicati-molecule-source
 
-        # Deliberately not Etc/UTC (the role's default), so that the container
-        # reporting this zone can only be explained by env.j2 having reached
-        # the process.
+        duplicati_hostname: duplicati.molecule.local
+
+        duplicati_path_prefix: /
+
+        # Bound to the loopback interface of the test container only. Nothing
+        # is published to the machine running Molecule, so two scenarios can
+        # run side by side without fighting over a port.
+        duplicati_container_http_host_bind_port: "127.0.0.1:8200"
+
+        duplicati_container_http_port: 8200
+
+        duplicati_container_additional_volumes_custom:
+          - type: bind
+            src: "{{ duplicati_molecule_extra_volume_src }}"
+            dst: "{{ duplicati_molecule_extra_volume_dst }}"
+            options: readonly
+
+        duplicati_container_labels_traefik_enabled: true
+
+        duplicati_container_labels_additional_labels:
+          - mash.molecule.additional-label=set-by-the-role
+
+        duplicati_container_extra_arguments:
+          - "--label=mash.molecule.extra-argument=set-by-the-role"
+
+        # Neither the role's default of Etc/UTC nor the test host's zone, so
+        # that the timezone the container ends up in can only have come from
+        # templates/env.j2.
         duplicati_environment_variables_tz: Asia/Tokyo
 
         duplicati_environment_variable_settings_encryption_key: moleculesettingskey1
