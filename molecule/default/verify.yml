@@ -171,7 +171,9 @@
               {{ duplicati_defaults.duplicati_version }} pinned in defaults/main.yml
             success_msg: "The container runs {{ duplicati_container.Config.Image }}"
 
-        # ── The web service is up, and it is not open ───────────────────────────
+        # ------------------------------------------------------------------
+        # The web service is up, and it is not open
+        # ------------------------------------------------------------------
 
         # Duplicati refuses to start its web service at all without
         # SETTINGS_ENCRYPTION_KEY (the image logs "Missing encryption key, unable to
@@ -272,7 +274,9 @@
             fail_msg: "Duplicati reports {{ duplicati_systeminfo.json.ServerVersionName | default('none') }}, expected {{ duplicati_defaults.duplicati_version }}"
             success_msg: "Duplicati reports {{ duplicati_systeminfo.json.ServerVersionName }}"
 
-        # ── A backup actually backs up, and a restore actually restores ─────────
+        # ------------------------------------------------------------------
+        # A backup actually backs up, and a restore actually restores
+        # ------------------------------------------------------------------
 
         - name: Create a Duplicati backup job over the API
           ansible.builtin.uri:
