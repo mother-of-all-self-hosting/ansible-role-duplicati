@@ -21,7 +21,7 @@ duplicati_source_path: "" # should be specified by users
 # this role adopts the one provided by LinuxServer.io team.
 # Also see: https://docs.duplicati.com/detailed-descriptions/using-duplicati-from-docker
 #
-# renovate: datasource=docker depName=linuxserver/duplicati versioning=semver
+# renovate: datasource=docker depName=ghcr.io/linuxserver/duplicati versioning=semver
 duplicati_version: 2.4.0
 
 duplicati_uid: ""
@@ -44,7 +44,7 @@ duplicati_container_image: "{{ duplicati_container_image_registry_prefix }}linux
 duplicati_container_image_tag: "{{ duplicati_version }}"
 duplicati_container_image_registry_prefix: "{{ duplicati_container_image_registry_prefix_upstream }}"
 duplicati_container_image_registry_prefix_upstream: "{{ duplicati_container_image_registry_prefix_upstream_default }}"
-duplicati_container_image_registry_prefix_upstream_default: docker.io/
+duplicati_container_image_registry_prefix_upstream_default: ghcr.io/
 
 duplicati_container_image_self_build: false
 duplicati_container_image_self_build_name: "linuxserver/duplicati:{{ duplicati_container_image_self_build_repo_version }}"

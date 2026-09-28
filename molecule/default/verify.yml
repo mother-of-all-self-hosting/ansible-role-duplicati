@@ -11,21 +11,20 @@
   gather_facts: false
 
   vars:
-    # The role's own path layout, spelled out here rather than read back out of
-    # defaults/main.yml. Those defaults are Jinja-derived (`duplicati_base_path`
-    # is built from `duplicati_identifier`, and the rest from that), so
-    # `include_vars` cannot resolve them, and reading the role's answer to
-    # decide whether the role is right would prove nothing anyway. Stating the
-    # expected layout independently means a change to it has to be made here
-    # too, deliberately.
-    duplicati_molecule_expected_identifier: duplicati
-    duplicati_molecule_expected_base_path: "/{{ duplicati_molecule_expected_identifier }}"
-    duplicati_molecule_expected_config_path: "{{ duplicati_molecule_expected_base_path }}/config"
-    duplicati_molecule_expected_backup_path: "{{ duplicati_molecule_expected_base_path }}/backup"
-
-    duplicati_molecule_api_url: "http://127.0.0.1:{{ duplicati_container_http_host_bind_port }}"
+    duplicati_molecule_api_url: "http://127.0.0.1:{{ duplicati_container_http_port }}"
     duplicati_molecule_canary_path: "{{ duplicati_source_path }}/{{ duplicati_molecule_canary_filename }}"
-    duplicati_molecule_backup_target_path: "{{ duplicati_molecule_expected_backup_path }}/{{ duplicati_molecule_job_name }}"
+    duplicati_molecule_backup_target_path: "/duplicati/backup/{{ duplicati_molecule_job_name }}"
+
+    # The unusual values the scenario configures the role with. Written down
+    # here rather than read back out of the inventory, so that a verify run
+    # compares the running container against something stated, not against
+    # whatever the scenario happens to say at the time.
+    duplicati_expected_uid: 1717
+    duplicati_expected_gid: 1717
+    duplicati_expected_hostname: duplicati.molecule.local
+    duplicati_expected_path_prefix: /duplicati-ui
+    duplicati_expected_timezone: Asia/Tokyo
+    duplicati_expected_timezone_abbreviation: JST
 
     duplicati_verify_units:
       - duplicati.service
@@ -71,11 +70,9 @@
           changed_when: false
           loop: "{{ duplicati_verify_units }}"
 
-        # ── The container is wired up the way the role's templates describe ──────
-
         - name: Inspect the Duplicati container
           ansible.builtin.command:
-            cmd: "docker container inspect {{ duplicati_molecule_expected_identifier }}"
+            cmd: docker container inspect duplicati
           register: duplicati_container_raw
           changed_when: false
 
@@ -83,7 +80,11 @@
           ansible.builtin.set_fact:
             duplicati_container: "{{ (duplicati_container_raw.stdout | from_json)[0] }}"
 
-        - name: Read the Duplicati container's bind mounts
+        # ------------------------------------------------------------------
+        # What the role told Docker to run
+        # ------------------------------------------------------------------
+
+        - name: Collect the mounts the role asked for
           ansible.builtin.set_fact:
             duplicati_container_mounts: >-
               {{
@@ -101,33 +102,78 @@
         - name: Assert the Duplicati container binds the paths the role manages
           ansible.builtin.assert:
             that:
-              - duplicati_container_mounts['/config'] | default('') == duplicati_molecule_expected_config_path
-              - duplicati_container_mounts['/backup'] | default('') == duplicati_molecule_expected_backup_path
+              - duplicati_container_mounts['/config'] | default('') == "/duplicati/config"
+              - duplicati_container_mounts['/backup'] | default('') == "/duplicati/backup"
               - duplicati_container_mounts['/source'] | default('') == duplicati_source_path
             fail_msg: >-
               Duplicati container mounts are not the role's paths:
               {{ duplicati_container_mounts }}
-              (expected /config={{ duplicati_molecule_expected_config_path }}, /backup={{ duplicati_molecule_expected_backup_path }}, /source={{ duplicati_source_path }})
+              (expected /config=/duplicati/config, /backup=/duplicati/backup, /source={{ duplicati_source_path }})
             success_msg: "Duplicati container binds /config, /backup and /source to the role's paths"
 
-        # env.j2 rendered it, `--env-file` carried it, and the process acted on it.
-        # Only the last of those three is proof, which is why the zone is read out
-        # of the running container rather than out of the env file.
-        - name: Retrieve the timezone the Duplicati container runs in
+        - name: Collect the extra mount the role asked for
+          ansible.builtin.set_fact:
+            duplicati_extra_mount: "{{ duplicati_container.Mounts | selectattr('Destination', 'equalto', duplicati_molecule_extra_volume_dst) | list }}"
+
+        # Reading the file back from inside the
+        # container is the difference between the variable existing and it working.
+        - name: Read the marker through the additional volume
           ansible.builtin.command:
-            cmd: "docker exec {{ duplicati_molecule_expected_identifier }} date +%Z"
-          register: duplicati_container_timezone
+            cmd: >-
+              docker exec duplicati
+              cat {{ duplicati_molecule_extra_volume_dst }}/{{ duplicati_molecule_marker_filename }}
+          register: duplicati_extra_volume
           changed_when: false
 
-        - name: Assert the Duplicati container runs in the configured timezone
+        - name: Assert the additional volume is mounted into the Duplicati container
           ansible.builtin.assert:
-            that: duplicati_container_timezone.stdout | trim == 'JST'
-            fail_msg: >-
-              The container reports timezone `{{ duplicati_container_timezone.stdout | trim }}`,
-              so TZ={{ duplicati_environment_variables_tz }} from env.j2 did not reach the process
-            success_msg: "The container runs in the configured timezone ({{ duplicati_environment_variables_tz }})"
+            that:
+              - duplicati_extra_volume.rc == 0
+              - duplicati_extra_volume.stdout | trim == duplicati_molecule_extra_volume_marker
+            fail_msg: "The additional volume did not carry the marker into the container"
+            success_msg: "The additional volume carries the marker into the container"
 
-        # ── The web service is up, and it is not open ───────────────────────────
+        # Unlike other services whose container image is provided by linuxserver.io,
+        # Duplicati's container does not support running as non-root user. Values specified
+        # with PUID and PGID are applied after the container is started.
+        - name: Assert that the container itself runs as root
+          ansible.builtin.assert:
+            that:
+              - duplicati_container.Config.User == '0:0'
+            fail_msg: >-
+              The container itself runs as root.
+            success_msg: "The container runs as {{ duplicati_container.Config.User }}"
+
+        # See the comment on the previous step.
+        - name: Assert that the role's uid and gid reached the container
+          ansible.builtin.assert:
+            that:
+              - ('PUID=' ~ duplicati_expected_uid) in duplicati_container.Config.Env
+              - ('PGID=' ~ duplicati_expected_gid) in duplicati_container.Config.Env
+            fail_msg: >-
+              The container runs
+              with {{ duplicati_container.Config.Env | select('match', 'P[UG]ID=') | list }}
+            success_msg: "The container carries the matching PUID/PGID"
+
+        - name: Assert that the role's timezone reached the container environment
+          ansible.builtin.assert:
+            that:
+              - ('TZ=' ~ duplicati_expected_timezone) in duplicati_container.Config.Env
+            fail_msg: "templates/env.j2 did not put TZ={{ duplicati_expected_timezone }} on the container"
+            success_msg: "The container environment carries TZ={{ duplicati_expected_timezone }}"
+
+        - name: Assert that the container image is the pinned version
+          ansible.builtin.assert:
+            that:
+              - duplicati_container.Config.Image == 'ghcr.io/linuxserver/duplicati:' ~ duplicati_defaults.duplicati_version
+            fail_msg: >-
+              The container runs {{ duplicati_container.Config.Image }}, not the
+              {{ duplicati_defaults.duplicati_version }} pinned in defaults/main.yml
+            success_msg: "The container runs {{ duplicati_container.Config.Image }}"
+
+        # ------------------------------------------------------------------
+        # The web service is up, and it is not open
+        # ------------------------------------------------------------------
 
         # Duplicati refuses to start its web service at all without
         # SETTINGS_ENCRYPTION_KEY (the image logs "Missing encryption key, unable to
@@ -224,10 +270,13 @@
             that:
               - duplicati_systeminfo.json.ServerVersion.startswith(duplicati_defaults.duplicati_version ~ '.')
               - duplicati_systeminfo.json.ServerVersionType == 'stable'
+              - duplicati_container.Config.Labels['org.opencontainers.image.version'].startswith('v'~ duplicati_defaults.duplicati_version ~ '.') # Mind "v"
             fail_msg: "Duplicati reports {{ duplicati_systeminfo.json.ServerVersionName | default('none') }}, expected {{ duplicati_defaults.duplicati_version }}"
             success_msg: "Duplicati reports {{ duplicati_systeminfo.json.ServerVersionName }}"
 
-        # ── A backup actually backs up, and a restore actually restores ─────────
+        # ------------------------------------------------------------------
+        # A backup actually backs up, and a restore actually restores
+        # ------------------------------------------------------------------
 
         - name: Create a Duplicati backup job over the API
           ansible.builtin.uri:
@@ -423,7 +472,6 @@
               - "Duplicati version: {{ duplicati_systeminfo.json.ServerVersionName }} ({{ duplicati_systeminfo.json.ServerVersionType }})"
               - "Duplicati HTTP: {{ duplicati_endpoint.status }}"
               - "Duplicati image: {{ duplicati_container.Config.Image }}"
-              - "Duplicati timezone: {{ duplicati_container_timezone.stdout | trim }}"
               - "Duplicati backup: {{ duplicati_backup_task.json.Status }}, {{ duplicati_backup_archives.matched }} archive(s)"
               - "Duplicati restore: {{ duplicati_restore_task.json.Status }}, canary intact"
 

@@ -24,11 +24,12 @@ ExecStartPre={{ devture_systemd_docker_base_host_command_sh }} -c '{{ duplicati_
 
 {#
   PUID and PGID are specified on env.j2 to run the container as duplicati_uid:duplicati_gid
-  See: https://github.com/linuxserver/docker-duplicati/blob/master/README.md#user--group-identifiers
+  See: https://docs.linuxserver.io/images/docker-duplicati/#user-group-identifiers
 #}
 ExecStartPre={{ devture_systemd_docker_base_host_command_docker }} create \
       --rm \
       --name={{ duplicati_identifier }} \
+      --user=0:0 \
       --log-driver=none \
       --cap-drop=ALL \
       --cap-add=CAP_DAC_OVERRIDE \

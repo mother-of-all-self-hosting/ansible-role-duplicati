@@ -53,7 +53,7 @@ scenario() {
 	git config commit.gpgsign false
 
 	cat > defaults/main.yml <<-'YAML'
-		# renovate: datasource=docker depName=linuxserver/duplicati versioning=semver
+		# renovate: datasource=docker depName=ghcr.io/linuxserver/duplicati versioning=semver
 		duplicati_version: 2.3.0
 
 		duplicati_container_image: "{{ duplicati_container_image_registry_prefix }}linuxserver/duplicati:{{ duplicati_container_image_tag }}"
