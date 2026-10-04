@@ -25,9 +25,6 @@
     - name: Ensure Docker is installed for Duplicati Molecule tests preparation
       ansible.builtin.include_role:
         name: ansible-role-docker
-      vars:
-        docker_daemon_options:
-          storage-driver: vfs
 
     # Bind-mounted into the Duplicati container through
     # `duplicati_container_additional_volumes_custom`. The role does not create the source
