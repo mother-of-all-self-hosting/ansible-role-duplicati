@@ -22,9 +22,6 @@
   with_items:
     - duplicati_uid
     - duplicati_gid
-    - duplicati_hostname
-    - duplicati_path_prefix
-    - duplicati_container_network
     - duplicati_source_path
     - duplicati_environment_variable_settings_encryption_key
     - duplicati_environment_variable_duplicati__webservice_password
